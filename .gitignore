@@ -1,43 +1,80 @@
-# Generic build artifacts
+# -----------------------------------------------------------------------------
+# NanoAI Monorepo .gitignore
+# -----------------------------------------------------------------------------
+
+# Generic build directories
 build/
 build_*/
 cmake-build-*/
+*/build/
+*/build_*/
+*/cmake-build-*/
 
 # CMake generated files
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
-Makefile
-compile_commands.json
 CTestTestfile.cmake
 Testing/
 install_manifest.txt
 CPackConfig.cmake
 CPackSourceConfig.cmake
+compile_commands.json
+Makefile
 
-# Install outputs
+# Ninja / other generators
+.ninja_deps
+.ninja_log
+build.ninja
+
+# Install / output directories
 install/
 _install/
 out/
+dist/
 
-# Common binary/package outputs
+# Common C/C++ build artifacts
+*.o
+*.obj
+*.lo
+*.la
 *.a
 *.so
 *.so.*
 *.dylib
 *.dll
 *.lib
+*.exp
 *.exe
-*.o
-*.obj
-*.tar
-*.tar.gz
-*.tgz
-*.zip
+*.out
 
-# IDE/editor
+# Debug symbols / maps
+*.dSYM/
+*.pdb
+*.map
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.cache
+
+# Python/cache noise (some helper scripts may generate these)
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Editor/OS files
 .idea/
 .vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Local helper scripts (machine/user specific)
+github_push.sh
 
 # Exclude local/private module from publishing
 NanoAI_MNN/
