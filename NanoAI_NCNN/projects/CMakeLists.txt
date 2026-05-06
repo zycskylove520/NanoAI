@@ -1,0 +1,42 @@
+# Aggregated platform projects entry.
+
+set(NANOAI_NCNN_PROJECTS "ALL" CACHE STRING "Semicolon-separated project names under projects/ (ALL or NONE)")
+
+file(GLOB _NANOAI_NCNN_PROJECT_CMAKES RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*/CMakeLists.txt")
+set(_NANOAI_NCNN_AVAILABLE_PROJECTS)
+foreach(_project_cmake IN LISTS _NANOAI_NCNN_PROJECT_CMAKES)
+    get_filename_component(_project_name "${_project_cmake}" DIRECTORY)
+    list(APPEND _NANOAI_NCNN_AVAILABLE_PROJECTS ${_project_name})
+endforeach()
+
+set(_NANOAI_NCNN_SELECTED_PROJECTS)
+if(NANOAI_NCNN_PROJECTS STREQUAL "ALL")
+    set(_NANOAI_NCNN_SELECTED_PROJECTS ${_NANOAI_NCNN_AVAILABLE_PROJECTS})
+elseif(NANOAI_NCNN_PROJECTS STREQUAL "NONE")
+    set(_NANOAI_NCNN_SELECTED_PROJECTS)
+else()
+    set(_NANOAI_NCNN_SELECTED_PROJECTS ${NANOAI_NCNN_PROJECTS})
+endif()
+
+foreach(_project_name IN LISTS _NANOAI_NCNN_AVAILABLE_PROJECTS)
+    string(TOUPPER ${_project_name} _project_name_upper)
+    set(_project_option_name NANOAI_ENABLE_PROJECT_${_project_name_upper})
+    option(${_project_option_name} "Build ${_project_name} deployment project" OFF)
+
+    if(NANOAI_NCNN_PROJECTS STREQUAL "ALL")
+        set(${_project_option_name} ON CACHE BOOL "Build ${_project_name} deployment project" FORCE)
+    elseif(NANOAI_NCNN_PROJECTS STREQUAL "NONE")
+        set(${_project_option_name} OFF CACHE BOOL "Build ${_project_name} deployment project" FORCE)
+    else()
+        list(FIND _NANOAI_NCNN_SELECTED_PROJECTS ${_project_name} _selected_index)
+        if(_selected_index GREATER -1)
+            set(${_project_option_name} ON CACHE BOOL "Build ${_project_name} deployment project" FORCE)
+        else()
+            set(${_project_option_name} OFF CACHE BOOL "Build ${_project_name} deployment project" FORCE)
+        endif()
+    endif()
+
+    if(${_project_option_name})
+        add_subdirectory(${_project_name})
+    endif()
+endforeach()

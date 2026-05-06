@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(Threads)
+
+include("${CMAKE_CURRENT_LIST_DIR}/NanoAIFlowTargets.cmake")
+
+if(TARGET NanoAI::NanoAIFlow AND NOT TARGET NanoAI::Flow)
+    add_library(NanoAI::Flow ALIAS NanoAI::NanoAIFlow)
+endif()

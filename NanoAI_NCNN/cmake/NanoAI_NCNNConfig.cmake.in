@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(Threads)
+find_dependency(NanoAIFlow CONFIG)
+
+include("${CMAKE_CURRENT_LIST_DIR}/NanoAI_NCNNTargets.cmake")

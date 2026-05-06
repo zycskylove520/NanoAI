@@ -1,0 +1,56 @@
+name: Bug report
+description: Report a reproducible bug
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please provide enough detail for us to reproduce it.
+
+  - type: input
+    id: module
+    attributes:
+      label: Module
+      description: Which module is affected?
+      placeholder: NanoAIFlow / NanoAI_RKNN / NanoAI_NCNN
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS / architecture / toolchain
+      placeholder: Ubuntu 22.04, aarch64 cross, gcc 11
+    validations:
+      required: true
+
+  - type: textarea
+    id: cmake_cmd
+    attributes:
+      label: Configure or build command
+      description: Paste the exact command you executed
+      placeholder: cmake -S ... -B ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: error_log
+    attributes:
+      label: Error output
+      description: Paste relevant error log
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context

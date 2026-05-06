@@ -1,0 +1,108 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 16,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "flow-package",
+      "displayName": "NanoAIFlow Package",
+      "description": "Build NanoAIFlow as a reusable package",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "NANOAI_BUILD_FLOW": "ON",
+        "NANOAI_BUILD_RKNN": "OFF",
+        "NANOAI_BUILD_NCNN": "OFF",
+        "NANOAIFLOW_BUILD_TESTS": "OFF",
+        "NANOAIFLOW_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "rknn-package",
+      "displayName": "NanoAI_RKNN Package",
+      "description": "Build NanoAI_RKNN package (external RKNN/RGA/OpenCV deps required)",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "NANOAI_BUILD_FLOW": "OFF",
+        "NANOAI_BUILD_RKNN": "ON",
+        "NANOAI_BUILD_NCNN": "OFF",
+        "NANOAI_RKNN_BUILD_MODE": "PACKAGE",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/NanoAI_RKNN/cmake/toolchains/rknn-aarch64-gcc.cmake",
+        "NANOAIFLOW_ROOT": "$env{NANOAIFLOW_ROOT}",
+        "NANOAI_RKNN_RUNTIME_INCLUDE_DIR": "$env{NANOAI_RKNN_RUNTIME_INCLUDE_DIR}",
+        "NANOAI_RKNN_RUNTIME_LIBRARY_DIR": "$env{NANOAI_RKNN_RUNTIME_LIBRARY_DIR}",
+        "NANOAI_RKNN_RGA_ROOT": "$env{NANOAI_RKNN_RGA_ROOT}",
+        "NANOAI_RKNN_OPENCV_DIR": "$env{NANOAI_RKNN_OPENCV_DIR}",
+        "NANOAI_RKNN_STB_IMAGE_INCLUDE_DIR": "$env{NANOAI_RKNN_STB_IMAGE_INCLUDE_DIR}",
+        "NANOAI_RKNN_JPEG_TURBO_ROOT": "$env{NANOAI_RKNN_JPEG_TURBO_ROOT}",
+        "NANOAI_RKNN_UTILS_ROOT": "$env{NANOAI_RKNN_UTILS_ROOT}"
+      }
+    },
+    {
+      "name": "ncnn-package-host",
+      "displayName": "NanoAI_NCNN Package (Host)",
+      "description": "Build NanoAI_NCNN package on host (external NCNN/OpenCV deps required)",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "NANOAI_BUILD_FLOW": "OFF",
+        "NANOAI_BUILD_RKNN": "OFF",
+        "NANOAI_BUILD_NCNN": "ON",
+        "NANOAI_NCNN_BUILD_MODE": "PACKAGE",
+        "NANOAIFLOW_ROOT_HOST": "$env{NANOAIFLOW_ROOT_HOST}",
+        "NANOAIFLOW_ROOT_ANDROID": "$env{NANOAIFLOW_ROOT_ANDROID}",
+        "NANOAI_NCNN_NCNN_INCLUDE_DIR": "$env{NANOAI_NCNN_NCNN_INCLUDE_DIR}",
+        "NANOAI_NCNN_NCNN_LIBRARY_DIR": "$env{NANOAI_NCNN_NCNN_LIBRARY_DIR}",
+        "NANOAI_NCNN_OPENCV_DIR": "$env{NANOAI_NCNN_OPENCV_DIR}"
+      }
+    },
+    {
+      "name": "ncnn-projects-android",
+      "displayName": "NanoAI_NCNN Projects (Android)",
+      "description": "Build NanoAI_NCNN Android projects preset",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "NANOAI_BUILD_FLOW": "OFF",
+        "NANOAI_BUILD_RKNN": "OFF",
+        "NANOAI_BUILD_NCNN": "ON",
+        "NANOAI_NCNN_BUILD_MODE": "PROJECTS",
+        "NANOAI_NCNN_PROJECTS": "car_project",
+        "NANOAI_NCNN_ANDROID_PRESET": "ON",
+        "NANOAI_NCNN_ANDROID_ABI": "arm64-v8a",
+        "NANOAI_NCNN_ANDROID_PLATFORM": "android-26",
+        "NANOAI_NCNN_ANDROID_NDK_PATH": "$env{ANDROID_NDK_HOME}",
+        "NANOAIFLOW_ROOT_ANDROID": "$env{NANOAIFLOW_ROOT_ANDROID}",
+        "NANOAI_NCNN_NCNN_INCLUDE_DIR": "$env{NANOAI_NCNN_NCNN_INCLUDE_DIR}",
+        "NANOAI_NCNN_NCNN_LIBRARY_DIR": "$env{NANOAI_NCNN_NCNN_LIBRARY_DIR}",
+        "NANOAI_NCNN_OPENCV_DIR": "$env{NANOAI_NCNN_OPENCV_DIR}"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "flow-package",
+      "configurePreset": "flow-package",
+      "jobs": 8
+    },
+    {
+      "name": "rknn-package",
+      "configurePreset": "rknn-package",
+      "jobs": 8
+    },
+    {
+      "name": "ncnn-package-host",
+      "configurePreset": "ncnn-package-host",
+      "jobs": 8
+    },
+    {
+      "name": "ncnn-projects-android",
+      "configurePreset": "ncnn-projects-android",
+      "jobs": 8
+    }
+  ]
+}
