@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  flow-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Flow Preset
+        run: cmake --preset flow-package
+
+      - name: Build Flow Preset
+        run: cmake --build --preset flow-package -j
+
+      - name: Install Flow
+        run: cmake --install out/build/flow-package --prefix "$GITHUB_WORKSPACE/out/install/flow"
+
+  rknn-probe-configure:
+    runs-on: ubuntu-latest
+    needs: flow-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure RKNN Native Probe
+        run: |
+          cmake -S NanoAI_RKNN -B out/build/rknn-ci \
+            -DNANOAI_RKNN_BUILD_MODE=PACKAGE
+
