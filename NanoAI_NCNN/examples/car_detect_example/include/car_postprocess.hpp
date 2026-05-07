@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: car_postprocess.hpp
+// Brief: TODO - add file summary.
+//
+
 #pragma once
 
 #include <algorithm>

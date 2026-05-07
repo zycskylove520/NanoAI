@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: demo_main.cpp
+// Brief: TODO - add file summary.
+//
+
 #include <iostream>
 
 #include <any>

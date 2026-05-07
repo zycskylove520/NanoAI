@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: ncnn_cv_postprocess_pipe.hpp
+// Brief: TODO - add file summary.
+//
+
 #pragma once
 
 #include <functional>

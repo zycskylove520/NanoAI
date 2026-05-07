@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: rknn_types.hpp
+// Brief: TODO - add file summary.
+//
+
 #pragma once
 
 #include <cstdint>
