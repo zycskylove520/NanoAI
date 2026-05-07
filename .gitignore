@@ -79,9 +79,8 @@ github_push.sh
 # Exclude local/private module from publishing
 NanoAI_MNN/
 
-# Vendored SDK/toolchain bundles (too large for GitHub repo)
-**/3rdparty/android-ndk-r25c/
-**/3rdparty/OpenCV-android-sdk/
+# Ignore all third-party vendor directories in every module
+**/3rdparty/**
 
 # Nested third-party git metadata
 **/3rdparty/*/.git/
