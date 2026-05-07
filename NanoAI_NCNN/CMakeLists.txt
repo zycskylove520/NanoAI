@@ -63,10 +63,6 @@ if(NANOAIFLOW_ROOT)
     list(APPEND CMAKE_PREFIX_PATH "${NANOAIFLOW_ROOT}")
 endif()
 
-if(NANOAIFLOW_ROOT AND (NOT DEFINED NanoAIFlow_DIR OR NanoAIFlow_DIR STREQUAL ""))
-    set(NanoAIFlow_DIR "${NANOAIFLOW_ROOT}/lib/cmake/NanoAIFlow" CACHE PATH "NanoAIFlow package config directory" FORCE)
-endif()
-
 set(NANOAI_NCNN_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/NanoAI_NCNN" CACHE STRING "Install path for NanoAI_NCNN CMake package files")
 
 # ======================================================

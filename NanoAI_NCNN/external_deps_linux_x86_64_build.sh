@@ -9,8 +9,6 @@ TOOLCHAIN_FILE="${SCRIPT_DIR}/cmake/toolchains/ncnn-linux-x86_64-gcc.cmake"
 NCNN_INCLUDE_DIR="${SCRIPT_DIR}/3rdparty/ncnn/ubuntu-x86_64/install/include"
 NCNN_LIBRARY_DIR="${SCRIPT_DIR}/3rdparty/ncnn/ubuntu-x86_64/install/lib"
 NANOAI_NCNN_OPENCV_DIR=""  # 不填则自动寻找linux系统上的opencv
-NANOAIFLOW_PREFIX="${REPO_ROOT}/out/install/nanoai_flow"
-NANOAIFLOW_CMAKE_DIR="${NANOAIFLOW_PREFIX}/lib/cmake/NanoAIFlow"
 
 # NanoAI_NCNN is always package-installable. Examples are optional.
 NANOAI_NCNN_BUILD_EXAMPLES="OFF"
@@ -18,6 +16,26 @@ NANOAI_NCNN_EXAMPLES="ALL"
 
 BUILD_DIR="${SCRIPT_DIR}/build_linux_external"
 JOBS="$(nproc 2>/dev/null || echo 4)"
+
+NANOAIFLOW_CMAKE_DIR=""
+
+detect_nanoaiflow_cmake_dir() {
+  local config_file=""
+
+  for config_file in \
+    "/usr/local/lib/cmake/NanoAIFlow/NanoAIFlowConfig.cmake" \
+    "/usr/local/lib64/cmake/NanoAIFlow/NanoAIFlowConfig.cmake" \
+    "/usr/lib/cmake/NanoAIFlow/NanoAIFlowConfig.cmake" \
+    "/usr/lib64/cmake/NanoAIFlow/NanoAIFlowConfig.cmake"; do
+    if [[ -f "${config_file}" ]]; then
+      NANOAIFLOW_CMAKE_DIR="$(dirname "${config_file}")"
+      return 0
+    fi
+  done
+
+  NANOAIFLOW_CMAKE_DIR=""
+  return 1
+}
 
 print_help() {
   cat <<EOF
@@ -39,8 +57,6 @@ Current defaults:
   NCNN_INCLUDE_DIR          ${NCNN_INCLUDE_DIR}
   NCNN_LIBRARY_DIR          ${NCNN_LIBRARY_DIR}
   NANOAI_NCNN_OPENCV_DIR    ${NANOAI_NCNN_OPENCV_DIR}
-  NANOAIFLOW_PREFIX         ${NANOAIFLOW_PREFIX}
-  NANOAIFLOW_CMAKE_DIR      ${NANOAIFLOW_CMAKE_DIR}
 
 Examples:
   ./external_deps_linux_build.sh
@@ -73,8 +89,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Ensure NanoAIFlow package is available for find_package(NanoAIFlow).
-if [[ ! -f "${NANOAIFLOW_CMAKE_DIR}/NanoAIFlowConfig.cmake" ]]; then
-  echo "[INFO] NanoAIFlow package not found at: ${NANOAIFLOW_CMAKE_DIR}"
+if ! detect_nanoaiflow_cmake_dir; then
+  echo "[INFO] NanoAIFlow package config not found in common system paths."
   echo "[INFO] Trying to build/install NanoAIFlow automatically..."
 
   FLOW_BUILD_SCRIPT="${REPO_ROOT}/NanoAIFlow/external_deps_flow_build.sh"
@@ -92,8 +108,9 @@ if [[ ! -f "${NANOAIFLOW_CMAKE_DIR}/NanoAIFlowConfig.cmake" ]]; then
   fi
 fi
 
-if [[ ! -f "${NANOAIFLOW_CMAKE_DIR}/NanoAIFlowConfig.cmake" ]]; then
-  echo "[ERROR] NanoAIFlowConfig.cmake still not found at: ${NANOAIFLOW_CMAKE_DIR}" >&2
+if ! detect_nanoaiflow_cmake_dir; then
+  echo "[ERROR] NanoAIFlowConfig.cmake still not found after auto build/install." >&2
+  echo "[ERROR] Expected one of: /usr/local/lib/cmake/NanoAIFlow or /usr/lib/cmake/NanoAIFlow (including lib64)." >&2
   exit 1
 fi
 
@@ -106,9 +123,7 @@ cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
   -DNANOAI_NCNN_NCNN_INCLUDE_DIR="${NCNN_INCLUDE_DIR}" \
   -DNANOAI_NCNN_NCNN_LIBRARY_DIR="${NCNN_LIBRARY_DIR}" \
   -DNANOAI_NCNN_OPENCV_DIR="${NANOAI_NCNN_OPENCV_DIR}" \
-  -DNANOAIFLOW_ROOT="${NANOAIFLOW_PREFIX}" \
-  -DNanoAIFlow_DIR="${NANOAIFLOW_CMAKE_DIR}" \
-  -DCMAKE_PREFIX_PATH="${NANOAIFLOW_PREFIX}"
+  -DNanoAIFlow_DIR="${NANOAIFLOW_CMAKE_DIR}"
 
 cmake --build "${BUILD_DIR}" -j"${JOBS}"
 
