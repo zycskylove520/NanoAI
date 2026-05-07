@@ -1,9 +1,10 @@
+
 # SPDX-License-Identifier: Apache-2.0
 #
 # Copyright (c) NanoAI
 #
 # File: CMakeLists.txt
-# Brief: NanoAIFlow 头文件库的构建、安装与打包定义。
+# Brief: NanoAIFlow 框架始终 install，examples 可选构建，所有依赖 INTERFACE 链接。
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -12,14 +13,15 @@ project(NanoAIFlow VERSION 1.0.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-# 可选开关：测试、示例与打包。
-option(NANOAIFLOW_BUILD_TESTS "Build NanoAIFlow tests" OFF)
-option(NANOAIFLOW_BUILD_EXAMPLES "Build NanoAIFlow examples" OFF)
-option(NANOAIFLOW_ENABLE_CPACK "Enable CPack package generation" OFF)
+
+# 可选开关：测试、示例（主库始终 install，examples 仅在 ON 时构建）。
+option(NANOAIFLOW_BUILD_TESTS "Build NanoAIFlow tests (optional)" OFF)
+option(NANOAIFLOW_BUILD_EXAMPLES "Build NanoAIFlow examples (optional)" OFF)
+option(NANOAIFLOW_ENABLE_CPACK "Enable CPack package generation (optional)" OFF)
 
 find_package(Threads REQUIRED)
 
-# 头文件库目标与命名空间别名目标。
+## 头文件库目标与命名空间别名目标（始终 install，INTERFACE 链接依赖）
 add_library(NanoAIFlow INTERFACE)
 add_library(NanoAI::Flow ALIAS NanoAIFlow)
 
@@ -32,7 +34,7 @@ target_include_directories(NanoAIFlow
 )
 target_link_libraries(NanoAIFlow INTERFACE Threads::Threads)
 
-# 安装 CMake 包配置文件目录。
+## 安装 CMake 包配置文件目录
 set(NANOAIFLOW_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/NanoAIFlow" CACHE STRING "Install path for NanoAIFlow CMake package files")
 
 install(TARGETS NanoAIFlow
@@ -80,6 +82,10 @@ if(NANOAIFLOW_ENABLE_CPACK)
 endif()
 
 if(NANOAIFLOW_BUILD_EXAMPLES)
+    # 入门示例程序。
+    add_executable(nanoaiflow_quickstart examples/pipeline_quickstart.cpp)
+    target_link_libraries(nanoaiflow_quickstart PRIVATE NanoAIFlow)
+
     # 单文件性能示例程序。
     add_executable(nanoaiflow_benchmark examples/perf_benchmark.cpp)
     target_link_libraries(nanoaiflow_benchmark PRIVATE NanoAIFlow)

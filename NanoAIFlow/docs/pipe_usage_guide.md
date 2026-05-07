@@ -145,4 +145,4 @@ public:
 
 - `core/pipe.hpp`
 - `core/pipeline.hpp`
-- `docs/examples/example.cpp`
+- `examples/pipeline_quickstart.cpp`

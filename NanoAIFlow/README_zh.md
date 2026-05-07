@@ -3,123 +3,93 @@
 
 [English](README.md) | 中文
 
-NanoAIFlow 是一个专为高性能 C++ 推理与数据处理场景设计的强类型并发流程编排框架。它不是运行时随意拼接节点的工作流系统，而是面向固定业务链路、强调吞吐、顺序语义和类型安全的工程化流水线基础设施。
 
-## 核心优势
+NanoAIFlow 是一个高性能、header-only、强类型并发 C++ 推理与数据处理框架。始终以可安装 CMake 包（通过 `find_package`）的形式交付，用户可选构建 examples 进行学习和测试。所有依赖均通过 INTERFACE 链接，集成简单可靠。
 
-### 1. 每个 Pipe 都能独立并发
-- 每个 Pipe 阶段都可单独配置最大并发度
-- 同一条 Pipeline 中，多个 Pipe 可同时处理不同序号的数据
-- 相比单线程串行链路或只有整体线程池的模型，更容易压榨多核 CPU 吞吐
+**核心范式：**
+- 始终作为框架（库）安装
+- 示例可选构建（通过 `-DNANOAIFLOW_BUILD_EXAMPLES=ON`）
+- 所有依赖均 INTERFACE 链接
 
-### 2. 多个 Pipe 一起并发，更适合高吞吐推理链路
-- Pipeline 不是“前一阶段全部做完，后一阶段再开始”
-- 一次 `run(...)` 会按阶段推进，而不同请求会在不同阶段并行流动
-- 这非常适合 Load、Preprocess、Infer、Postprocess 一类典型 AI 推理流水线
+## 核心特性
 
-### 3. 高并发下仍然保证顺序语义稳定
-- 阶段内部允许并发执行
-- 阶段之间按全局序号顺序放行
-- 这样既保留高吞吐，又避免下游出现不可控乱序行为
+1. **每个 Pipe 可独立并发**：每个阶段可声明并发度，多阶段可并行处理不同请求，最大化多核 CPU 吞吐。
+2. **多阶段流水并发推进**：非 barrier 模型，不同请求可在不同阶段并行流动，适合 AI 典型流水线（Load、Preprocess、Infer、Postprocess）。
+3. **高并发下顺序可控**：阶段间始终全局顺序放行，保证输出确定性。
+4. **强类型静态管线**：输入输出类型由 `on_run(...)` 定义，管线类型编译期固定，无运行时类型分发。
+5. **灵活执行策略**：每阶段可选 `shared_pool`、`dedicated_pool`、`inline_run`。
+6. **Header-only，INTERFACE 链接**：集成简单，无需静态/动态库，所有依赖 INTERFACE 链接。
+7. **可安装可复用**：始终以 CMake 包安装，`find_package(NanoAIFlow CONFIG REQUIRED)` 复用。
+8. **丰富工程测试**：并发、顺序、性能测试齐全，支持 tuple 自动展开与参数转发。
 
-### 4. 强类型静态管线，避免运行时类型错误
-- Pipe 的输入输出由 `on_run(...)` 签名直接定义
-- `NanoPipeLine<P1, P2, ...>` 在编译期确定类型流转
-- 不依赖 `std::any` 一类动态分发路径，减少运行时不确定性与维护成本
+## 典型场景
 
-### 5. 灵活执行策略，兼顾吞吐与隔离
-- `shared_pool`：适合大多数常规阶段，共享线程资源
-- `dedicated_pool`：适合关键阶段资源隔离，避免互相干扰
-- `inline_run`：适合极轻量逻辑，减少调度开销
+- 边缘 AI 流水线（CV、NLP、语音）
+- 固定结构、高吞吐生产链路
+- 多核并发且需顺序确定的系统
 
-### 6. Header-only 与标准 CMake 包导出
-- 引入成本低，便于集成到已有工程
-- 支持安装后通过 `find_package(NanoAIFlow CONFIG REQUIRED)` 复用
-- 适合 monorepo、组件化工程和第三方发布场景
+## 设计原则
 
-### 7. 为真实工程而设计
-- 提供并发正确性测试、顺序一致性测试、性能基准测试
-- 支持 tuple 自动展开，适合复杂阶段间数据流转
-- 适合作为 RKNN、NCNN、MNN 等推理模块的流程基础设施
+- 静态类型优先：类型错误前移到编译期
+- 阶段并发：每阶段独立控制并发与策略
+- 顺序放行：高并发下行为稳定可解释
+- 全局配额：避免任务堆积
 
-## 适用场景
-
-- CV、NLP、语音等端侧推理前后处理流水线
-- 固定结构、高吞吐、低容错的工业链路
-- 需要严格控制顺序语义，同时又要发挥多核并发能力的业务系统
-
-## 设计要点
-
-- 静态类型优先：把类型问题尽量前移到编译期
-- 阶段化并发：每个阶段独立控制并发与执行策略
-- 顺序放行：高并发下保持输出行为稳定、可解释
-- 全局配额控制：避免整体任务失控堆积
-
-详细设计可参考：
-
+详细设计见：
 - [docs/nanoai_design_philosophy.md](docs/nanoai_design_philosophy.md)
 - [docs/pipe_usage_guide.md](docs/pipe_usage_guide.md)
+
 
 ## 仓库结构
 
 - `include`：对外头文件
 - `3rdparty/thread-pool`：线程池依赖
-- `examples`：示例程序
-- `test`：单元测试、并发测试、性能测试
+- `examples`：可选示例程序（通过 `-DNANOAIFLOW_BUILD_EXAMPLES=ON` 构建）
+- `test`：单元、并发、性能测试
 - `docs`：设计与使用文档
+
 
 ## 快速开始
 
-### 1. 仅构建库
+### 1. 构建并安装框架（推荐）
 
 ```bash
 cmake -S . -B build
 cmake --build build -j
+cmake --install build --prefix /your/install/prefix
 ```
 
-### 2. 启用测试
+### 2. 可选构建示例
 
 ```bash
-cmake -S . -B build_test \
-  -DNANOAIFLOW_BUILD_TESTS=ON
+cmake -S . -B build_example -DNANOAIFLOW_BUILD_EXAMPLES=ON
+cmake --build build_example -j
+```
 
+### 3. 可选构建测试
+
+```bash
+cmake -S . -B build_test -DNANOAIFLOW_BUILD_TESTS=ON
 cmake --build build_test -j
 ctest --test-dir build_test --output-on-failure
 ```
 
-### 3. 启用示例
-
-```bash
-cmake -S . -B build_example \
-  -DNANOAIFLOW_BUILD_EXAMPLES=ON
-
-cmake --build build_example -j
-```
-
-### 4. 安装为可复用 CMake 包
-
-```bash
-cmake -S . -B build_install \
-  -DCMAKE_INSTALL_PREFIX=/your/install/prefix
-
-cmake --build build_install -j
-cmake --install build_install
-```
 
 ## CMake 选项
 
-- `NANOAIFLOW_BUILD_TESTS`：是否构建测试，默认 `OFF`
-- `NANOAIFLOW_BUILD_EXAMPLES`：是否构建示例，默认 `OFF`
-- `NANOAIFLOW_ENABLE_CPACK`：是否启用 CPack 打包，默认 `OFF`
+- `NANOAIFLOW_BUILD_EXAMPLES`：是否构建示例（可选，默认 `OFF`）
+- `NANOAIFLOW_BUILD_TESTS`：是否构建测试（可选，默认 `OFF`）
+- `NANOAIFLOW_ENABLE_CPACK`：是否启用 CPack 打包（可选，默认 `OFF`）
+
 
 ## 调用方示例
 
 ```cmake
 find_package(NanoAIFlow CONFIG REQUIRED)
-
 add_executable(app main.cpp)
 target_link_libraries(app PRIVATE NanoAI::Flow)
 ```
+
 
 若安装前缀不在系统默认路径，可在配置时指定：
 
@@ -127,12 +97,14 @@ target_link_libraries(app PRIVATE NanoAI::Flow)
 cmake -S . -B build -DCMAKE_PREFIX_PATH=/your/install/prefix
 ```
 
+
 ## 文档导航
 
 - [英文版 README](README.md)
 - [打包与 find_package 指南](docs/find_package_and_packaging_guide.md)
 - [设计理念](docs/nanoai_design_philosophy.md)
 - [Pipe 使用说明](docs/pipe_usage_guide.md)
+
 
 ## 许可证
 

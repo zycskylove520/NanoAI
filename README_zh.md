@@ -3,34 +3,39 @@
 
 [English](README.md) | 中文
 
-NanoAI 是一个面向高性能推理与数据处理的多模块 C++ 工程仓库，聚焦极致并发、类型安全、端侧部署与工程可复用性。仓库以 NanoAIFlow 作为统一流程基础设施，在此之上提供 RKNN 与 NCNN 两类推理模块，适合构建结构稳定、吞吐要求高、可长期维护的 AI 应用。
+
+NanoAI 是一个多模块高性能推理与数据处理 C++ 工程仓库。所有子模块均始终以可安装 CMake 包（通过 `find_package`）的形式交付，用户可选构建 examples 进行学习和测试。所有依赖均 INTERFACE 链接，构建/安装/示例范式在各子模块中完全统一。
+
 
 ## 核心模块
 
 ### NanoAIFlow
-- 面向推理前后处理与数据变换链路的高性能并发流程编排框架
-- Header-only 设计，接入轻量
-- 每个 Pipe 可独立配置并发度，多个 Pipe 可同时并发推进
-- 强类型静态管线，顺序可控，适合高吞吐场景
+- 高性能、header-only 并发流程编排框架，适合推理/数据处理
+- 始终以 CMake 包安装，examples 可选（`-DNANOAIFLOW_BUILD_EXAMPLES=ON`）
+- 所有依赖 INTERFACE 链接
 - 详见 [NanoAIFlow/README.md](NanoAIFlow/README.md) 和 [NanoAIFlow/README_zh.md](NanoAIFlow/README_zh.md)
 
 ### NanoAI_RKNN
-- 面向 Rockchip RKNN 部署场景的 C++ 推理组件
-- 深度集成 NanoAIFlow，可将加载、预处理、推理、后处理纳入统一并发管线
-- 支持标准 CMake 包导出与 ARM 端侧交叉编译
+- Rockchip RKNN 推理框架，深度集成 NanoAIFlow
+- 始终以 CMake 包安装，examples 可选
+- 所有依赖 INTERFACE 链接
 - 详见 [NanoAI_RKNN/README.md](NanoAI_RKNN/README.md) 和 [NanoAI_RKNN/README_zh.md](NanoAI_RKNN/README_zh.md)
 
 ### NanoAI_NCNN
-- 面向 NCNN 端侧部署场景的 C++ 推理组件
-- 支持 Linux aarch64 与 Android 等多平台部署
-- 与 NanoAIFlow 协同构建高吞吐推理流水线
+- NCNN 端侧推理框架，支持多平台（Linux aarch64、Android）
+- 始终以 CMake 包安装，examples 可选
+- 所有依赖 INTERFACE 链接
 - 详见 [NanoAI_NCNN/README.md](NanoAI_NCNN/README.md) 和 [NanoAI_NCNN/README_zh.md](NanoAI_NCNN/README_zh.md)
 
-## 推荐使用方式
 
-1. 先单独构建并安装 NanoAIFlow。
-2. 再构建 NanoAI_RKNN 或 NanoAI_NCNN，并通过 `CMAKE_PREFIX_PATH`、`NANOAIFLOW_ROOT` 或 `NanoAIFlow_DIR` 指向 Flow 安装目录。
-3. 根据目标平台选择对应模块与交叉编译参数。
+## 推荐用法
+
+1. 先构建并安装 NanoAIFlow（始终 install 框架）。
+2. 再构建并安装 NanoAI_RKNN 或 NanoAI_NCNN，设置 `CMAKE_PREFIX_PATH`、`NANOAIFLOW_ROOT` 或 `NanoAIFlow_DIR` 指向 Flow 安装目录。
+3. 如需示例，使用 `-D<模块>_BUILD_EXAMPLES=ON` 启用。
+4. 所有依赖均 INTERFACE 链接，使用 CMake 包模式无需手动链接系统库。
+5. 按需选择目标平台和 toolchain 配置。
+
 
 ## Monorepo 构建入口
 
@@ -42,15 +47,16 @@ NanoAI 是一个面向高性能推理与数据处理的多模块 C++ 工程仓�
 示例：
 
 ```bash
-# 1. 配置并构建 NanoAIFlow
+# 1. 配置并构建 NanoAIFlow（install 框架）
 cmake --preset flow-package
 cmake --build --preset flow-package
 
-# 2. 配置并构建 RKNN
+# 2. 配置并构建 RKNN（install 框架，需设置 NanoAIFlow 路径）
 export NANOAIFLOW_ROOT=/path/to/NanoAIFlow/install
 cmake --preset rknn-package
 cmake --build --preset rknn-package
 ```
+
 
 ## 文档导航
 

@@ -13,24 +13,32 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # 默认构建参数。
 BUILD_DIR="${SCRIPT_DIR}/build_external"
-INSTALL_PREFIX="${REPO_ROOT}/out/install/flow"
+INSTALL_PREFIX=""
 BUILD_TESTS="OFF"
 BUILD_EXAMPLES="OFF"
 ENABLE_CPACK="OFF"
 JOBS="$(nproc 2>/dev/null || echo 4)"
 
 print_help() {
-  cat <<'EOF'
+  cat <<EOF
 Usage: ./external_deps_flow_build.sh [options]
 
 Options:
   -B, --build-dir <dir>       Build directory (default: ./build_external)
-  -I, --install-prefix <dir>  Install prefix (default: ../out/install/flow)
+  -I, --install-prefix <dir>  Install prefix (default: system standard path)
       --tests                 Enable NANOAIFLOW_BUILD_TESTS=ON
       --examples              Enable NANOAIFLOW_BUILD_EXAMPLES=ON
       --cpack                 Enable NANOAIFLOW_ENABLE_CPACK=ON
   -j, --jobs <N>              Parallel build jobs (default: nproc)
   -h, --help                  Show this help message
+
+Current defaults:
+  BUILD_DIR       ${BUILD_DIR}
+  INSTALL_PREFIX  ${INSTALL_PREFIX:-<system default by CMake>}
+  BUILD_TESTS     ${BUILD_TESTS}
+  BUILD_EXAMPLES  ${BUILD_EXAMPLES}
+  ENABLE_CPACK    ${ENABLE_CPACK}
+  JOBS            ${JOBS}
 
 Examples:
   ./external_deps_flow_build.sh
@@ -78,15 +86,21 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mkdir -p "${BUILD_DIR}" "${INSTALL_PREFIX}"
+mkdir -p "${BUILD_DIR}"
 
 # 配置阶段：生成构建系统并写入目标开关。
-cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-  -DNANOAIFLOW_BUILD_TESTS="${BUILD_TESTS}" \
-  -DNANOAIFLOW_BUILD_EXAMPLES="${BUILD_EXAMPLES}" \
+_cmake_args=(
+  -DCMAKE_BUILD_TYPE=Release
+  -DNANOAIFLOW_BUILD_TESTS="${BUILD_TESTS}"
+  -DNANOAIFLOW_BUILD_EXAMPLES="${BUILD_EXAMPLES}"
   -DNANOAIFLOW_ENABLE_CPACK="${ENABLE_CPACK}"
+)
+
+if [[ -n "${INSTALL_PREFIX}" ]]; then
+  _cmake_args+=("-DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}")
+fi
+
+cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" "${_cmake_args[@]}"
 
 # 编译与安装阶段。
 cmake --build "${BUILD_DIR}" -j"${JOBS}"
@@ -98,4 +112,8 @@ if [[ "${BUILD_TESTS}" == "ON" ]]; then
 fi
 
 echo "Done. Build output: ${BUILD_DIR}"
-echo "Installed to: ${INSTALL_PREFIX}"
+if [[ -n "${INSTALL_PREFIX}" ]]; then
+  echo "Installed to: ${INSTALL_PREFIX}"
+else
+  echo "Installed to system default prefix (for example /usr/local on Linux/macOS)."
+fi

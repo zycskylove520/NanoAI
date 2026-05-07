@@ -2,10 +2,10 @@
 //
 // Copyright (c) NanoAI
 //
-// File: example.cpp
+// File: pipeline_quickstart.cpp
 // Brief: 固定管线构造与 Builder 链式构造的最小示例。
 
-#include "core/pipeline.hpp"
+#include "../include/nanoai_flow/core/pipeline.hpp"
 
 #include <iostream>
 #include <string>

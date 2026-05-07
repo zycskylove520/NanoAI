@@ -1,14 +1,20 @@
+
 # NanoAIFlow 安装、find_package 与打包指南
 
-本文档说明如何将 NanoAIFlow 安装为可复用 CMake 包，并在第三方项目中通过 find_package 引入。
+本指南说明如何始终将 NanoAIFlow 安装为可复用 CMake 包，并在第三方项目中通过 find_package 引入。examples 可选构建，主库始终 install。
 
-## 1. 本地安装 NanoAIFlow
+## 1. 安装 NanoAIFlow（始终 install 框架）
 
 在 NanoAIFlow 项目根目录执行：
 
-    cmake -S . -B build_release -DCMAKE_BUILD_TYPE=Release -DNANOAIFLOW_BUILD_TESTS=OFF -DNANOAIFLOW_BUILD_EXAMPLES=OFF
+    cmake -S . -B build_release -DCMAKE_BUILD_TYPE=Release
     cmake --build build_release -j
     cmake --install build_release --prefix /opt/nanoaiflow
+
+如需构建 examples，可加 -DNANOAIFLOW_BUILD_EXAMPLES=ON
+
+    cmake -S . -B build_example -DNANOAIFLOW_BUILD_EXAMPLES=ON
+    cmake --build build_example -j
 
 安装后关键文件位置：
 
@@ -26,28 +32,25 @@
     find_package(NanoAIFlow CONFIG REQUIRED)
 
     add_executable(my_app main.cpp)
-    target_link_libraries(my_app PRIVATE NanoAI_FLOW::Flow)
+    target_link_libraries(my_app PRIVATE NanoAI::Flow)
 
 配置第三方项目时，传入安装前缀：
 
     cmake -S . -B build -DCMAKE_PREFIX_PATH=/opt/nanoaiflow
     cmake --build build -j
 
-## 3. 生成发布压缩包（CPack）
+## 3. 生成发布压缩包（CPack 可选）
 
-NanoAIFlow 已启用 CPack（默认开启，变量 NANOAIFLOW_ENABLE_CPACK=ON）。
+NanoAIFlow 支持 CPack（变量 NANOAIFLOW_ENABLE_CPACK=ON）。
 
 在 NanoAIFlow 根目录执行：
 
     cmake -S . -B build_pkg -DCMAKE_BUILD_TYPE=Release
     cmake --build build_pkg --target package
 
-默认会在 build_pkg 目录下生成以下格式包：
+默认会在 build_pkg 目录下生成 .tar.gz/.zip 包。
 
-- .tar.gz
-- .zip
-
-如果只需要安装目录，不需要压缩包，可不执行 package 目标。
+如只需安装目录，可不执行 package 目标。
 
 ## 4. 版本说明
 
