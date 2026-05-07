@@ -7,9 +7,9 @@
 #include "nanoai_ncnn/cv/ncnn_cv_load_pipe.hpp"
 #include "nanoai_ncnn/cv/ncnn_cv_postprocess_pipe.hpp"
 #include "nanoai_ncnn/cv/ncnn_cv_preprocess_pipe.hpp"
-#include "nanoai_ncnn/projects/car_project/car_postprocess.hpp"
+#include "car_postprocess.hpp"
 
-namespace NanoAI_NCNN::Projects::CarProject
+namespace NanoAI_NCNN::Projects::CarDetectionExample
 {
     using CarPipeline = NcnnPipeLine<
         CV::NcnnLoadPipe<>,
@@ -35,4 +35,4 @@ namespace NanoAI_NCNN::Projects::CarProject
             CV::NcnnCvPostprocessPipe<CarDetections>(decode_car_detections));
     }
 
-} // namespace NanoAI_NCNN::Projects::CarProject
+} // namespace NanoAI_NCNN::Projects::CarDetectionExample

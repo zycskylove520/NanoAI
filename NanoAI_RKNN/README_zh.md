@@ -17,9 +17,9 @@ NanoAI_RKNN 是面向 Rockchip RKNN 端侧部署场景的高性能 C++ 推理组
 - 适合工业视觉、边缘 AI、嵌入式推理等场景
 
 ### 3. 工程集成方式灵活
-- 支持 `PACKAGE` 与 `PROJECTS` 两种互斥构建模式
-- 既可作为可复用 CMake 包发布，也可直接构建项目示例
-- 支持按子项目选择性构建，减少不必要的编译开销
+- 始终支持导出/安装为可复用 CMake 包
+- 可按需开启 examples 示例用于学习和集成验证
+- 支持按示例选择性构建，减少不必要的编译开销
 
 ### 4. 标准 CMake 包导出
 - 支持通过 `find_package` 接入上层工程
@@ -34,21 +34,21 @@ NanoAI_RKNN 是面向 Rockchip RKNN 端侧部署场景的高性能 C++ 推理组
 
 - `include`：对外头文件
 - `cmake`：构建脚本与第三方依赖配置
-- `projects`：示例或应用项目入口
+- `examples`：示例或应用项目入口
 - `3rdparty`：第三方依赖目录
 - `docs`：构建与打包文档
 
-## 构建模式
+## 构建行为
 
-1. `PACKAGE`
-   - 构建并安装为可通过 `find_package` 复用的第三方包
-2. `PROJECTS`
-   - 构建 `projects/` 下的应用或示例项目
+1. 始终支持打包安装
+  - 构建并安装为可通过 `find_package` 复用的第三方包
+2. 示例按需构建
+  - 通过 CMake 选项开启 `examples/` 下的应用或示例项目
 
 ## 核心配置项
 
-- `NANOAI_RKNN_BUILD_MODE`：`PACKAGE` 或 `PROJECTS`，默认 `PACKAGE`
-- `NANOAI_RKNN_PROJECTS`：仅在 `PROJECTS` 模式下生效，默认 `ALL`
+- `NANOAI_RKNN_BUILD_EXAMPLES`：`ON` 或 `OFF`，默认 `OFF`
+- `NANOAI_RKNN_EXAMPLES`：仅在 `NANOAI_RKNN_BUILD_EXAMPLES=ON` 时生效，默认 `ALL`
 - `NANOAI_RKNN_INSTALL_CMAKEDIR`：包配置文件安装目录
 - `NANOAIFLOW_ROOT`：NanoAIFlow 安装前缀
 
@@ -74,7 +74,7 @@ NanoAI_RKNN 是面向 Rockchip RKNN 端侧部署场景的高性能 C++ 推理组
 
 ```bash
 cmake -S . -B build_pkg \
-  -DNANOAI_RKNN_BUILD_MODE=PACKAGE \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=OFF \
   -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/rknn-aarch64-gcc.cmake \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
   -DNANOAI_RKNN_RUNTIME_INCLUDE_DIR=/path/to/librknn_api/include \
@@ -92,14 +92,14 @@ cmake --install build_pkg
 
 也可以使用 [external_deps_rknn_build.sh](external_deps_rknn_build.sh) 脚本，并按需修改其中路径变量。
 
-### 2. 构建指定子项目
+### 2. 构建指定示例
 
 ```bash
 cmake -S . -B build_proj \
-  -DNANOAI_RKNN_BUILD_MODE=PROJECTS \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=ON \
   -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/rknn-aarch64-gcc.cmake \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DNANOAI_RKNN_PROJECTS=test_project
+  -DNANOAI_RKNN_EXAMPLES=test_project
 
 cmake --build build_proj -j
 ```
@@ -108,8 +108,8 @@ cmake --build build_proj -j
 
 ```bash
 cmake -S . -B build_cross \
-  -DNANOAI_RKNN_BUILD_MODE=PROJECTS \
-  -DNANOAI_RKNN_PROJECTS=test_project \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=ON \
+  -DNANOAI_RKNN_EXAMPLES=test_project \
   -DCMAKE_TOOLCHAIN_FILE=/path/to/toolchain.cmake \
   -DCMAKE_SYSROOT=/path/to/sysroot \
   -DCMAKE_PREFIX_PATH=/path/to/deps
@@ -119,8 +119,7 @@ cmake --build build_cross --target NanoAI_rknn_demo -j
 
 ## 注意事项
 
-- `projects/test_project` 需要从当前仓库入口构建，不建议独立配置
-- `PACKAGE` 与 `PROJECTS` 互斥，不能同时启用
+- `examples/test_project` 需要从当前仓库入口构建，不建议独立配置
 - 当前主要面向 `aarch64/arm64` 交叉编译场景
 
 ## 文档导航

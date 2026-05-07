@@ -2,120 +2,80 @@
 
 [English](README.md) | 中文
 
-NanoAI_NCNN 是面向 NCNN 端侧部署场景的高性能 C++ 推理组件。它基于 NanoAIFlow 的强类型并发管线能力，适合构建从数据输入、预处理、模型推理到结果后处理的完整部署链路，并覆盖 Linux aarch64 与 Android 等常见端侧平台。
 
-## 核心优势
+NanoAI_NCNN 是一个高性能、可安装的 NCNN 端侧推理 C++ 框架。始终以可复用 CMake 包（通过 `find_package`）的形式交付，用户可选构建 examples 进行学习和测试。所有依赖均通过 INTERFACE 链接，适合稳定高吞吐的部署链路，支持 Linux aarch64、Android 等多平台。
 
-### 1. 与 NanoAIFlow 组合形成高吞吐推理流水线
-- 支持将加载、预处理、推理、后处理组织为统一 Pipe 链路
-- 可利用 NanoAIFlow 的阶段并发能力提升整体吞吐
-- 适合结构稳定、需要持续压榨多核性能的推理系统
 
-### 2. 面向端侧多平台部署
-- 支持 Linux aarch64 与 Android 等部署场景
-- 可根据目标平台选择对应的 toolchain 与依赖配置
-- 适合边缘视觉、嵌入式 AI、移动端推理等场景
+## 核心特性
 
-### 3. 工程集成方式灵活
-- 支持 `PACKAGE` 与 `PROJECTS` 两种构建模式
-- 既可作为可复用组件发布，也可直接构建仓库内项目
-- 支持按需选择子项目，减少构建范围
+1. **始终作为框架安装**：NanoAI_NCNN 始终以 CMake 包安装，`find_package(NanoAI_NCNN CONFIG REQUIRED)` 复用。
+2. **示例可选构建**：仅在设置 `-DNANOAI_NCNN_BUILD_EXAMPLES=ON` 时构建 examples。
+3. **INTERFACE 链接**：所有依赖（NanoAIFlow、OpenCV、NCNN 等）均 INTERFACE 链接，集成健壮、模块化。
+4. **高吞吐推理流水线**：基于 NanoAIFlow，支持并发、有序、强类型推理链路。
+5. **多平台端侧部署**：支持 Linux aarch64、Android，分别有 toolchain 与依赖配置。
+6. **依赖与交叉编译流程清晰**：NCNN、OpenCV、NDK 等依赖配置明确，交叉编译预设清晰。
 
-### 4. 标准 CMake 包导出
-- 支持通过 `find_package` 接入第三方工程
-- 便于纳入现有 CMake 工具链和组件化架构
-
-### 5. 依赖与交叉编译配置清晰
-- 支持 NCNN、OpenCV、Android NDK 等依赖显式传入
-- Linux aarch64 与 Android 预设分离，便于控制构建路径
 
 ## 仓库结构
 
 - `include`：对外头文件
 - `cmake`：构建脚本与第三方依赖配置
-- `projects`：示例或应用项目入口
+- `examples`：可选示例程序（通过 `-DNANOAI_NCNN_BUILD_EXAMPLES=ON` 构建）
 - `3rdparty`：第三方依赖目录
 - `docs`：构建与打包文档
 
-## 构建模式
 
-1. `PACKAGE`
-   - 构建并安装为可通过 `find_package` 复用的第三方包
-2. `PROJECTS`
-   - 构建 `projects/` 下的应用或示例项目
+## 构建与安装
 
-## 核心配置项
+**NanoAI_NCNN 始终作为框架安装。**
 
-- `NANOAI_NCNN_BUILD_MODE`：`PACKAGE` 或 `PROJECTS`，默认 `PACKAGE`
-- `NANOAI_NCNN_PROJECTS`：仅在 `PROJECTS` 模式下生效，默认 `ALL`
-- `NANOAI_NCNN_INSTALL_CMAKEDIR`：包配置文件安装目录
-- `NANOAIFLOW_ROOT`：NanoAIFlow 安装前缀
+### 1. 仅构建并安装框架
 
-平台相关预设：
-
-- `NANOAI_NCNN_LINUX_AARCH64_PRESET`
-- `NANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE`
-- `NANOAI_NCNN_ANDROID_PRESET`
-- `NANOAI_NCNN_ANDROID_NDK_PATH`
-
-常见第三方依赖配置：
-
-- `NANOAI_NCNN_NCNN_INCLUDE_DIR`
-- `NANOAI_NCNN_NCNN_LIBRARY_DIR`
-- `NANOAI_NCNN_NCNN_LIBRARY`
-- `NANOAI_NCNN_OPENCV_DIR`
-
-## 快速开始
-
-### 1. 构建并安装第三方包
-
-先确保能够找到 NanoAIFlow，任选一种方式：
-
+确保能找到 NanoAIFlow，可用：
 - `-DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install`
 - `-DCMAKE_PREFIX_PATH=/path/to/NanoAIFlow/install`
 - `-DNanoAIFlow_DIR=/path/to/NanoAIFlow/install/lib/cmake/NanoAIFlow`
 
 ```bash
 cmake -S . -B build_pkg \
-  -DNANOAI_NCNN_BUILD_MODE=PACKAGE \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
   -DCMAKE_INSTALL_PREFIX=/your/install/prefix
-
 cmake --build build_pkg -j
 cmake --install build_pkg
 ```
 
-### 2. 构建指定子项目
+### 2. 可选构建示例
 
 ```bash
-cmake -S . -B build_proj \
-  -DNANOAI_NCNN_BUILD_MODE=PROJECTS \
+cmake -S . -B build_example \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DNANOAI_NCNN_PROJECTS=car_project
-
-cmake --build build_proj -j
+  -DNANOAI_NCNN_BUILD_EXAMPLES=ON
+cmake --build build_example -j
 ```
 
-### 3. Linux aarch64 交叉编译
+### 3. 交叉编译预设
+
+- `NANOAI_NCNN_LINUX_AARCH64_PRESET`：启用 Linux aarch64 交叉编译
+- `NANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE`：自定义 Linux aarch64 toolchain 文件
+- `NANOAI_NCNN_ANDROID_PRESET`：启用 Android 交叉编译
+- `NANOAI_NCNN_ANDROID_NDK_PATH`：Android NDK 根目录
+
+
+常见第三方依赖配置：
+- `NANOAI_NCNN_NCNN_INCLUDE_DIR`
+- `NANOAI_NCNN_NCNN_LIBRARY_DIR`
+- `NANOAI_NCNN_NCNN_LIBRARY`
+- `NANOAI_NCNN_OPENCV_DIR`
+
+
+### 4. Linux aarch64/Android 交叉编译
 
 ```bash
 cmake -S . -B build_linux_aarch64 \
   -DNANOAI_NCNN_LINUX_AARCH64_PRESET=ON \
-  -DNANOAI_NCNN_BUILD_MODE=PACKAGE
-
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install
 cmake --build build_linux_aarch64 -j
 ```
-
-如需自定义 toolchain：
-
-```bash
-cmake -S . -B build_linux_aarch64 \
-  -DNANOAI_NCNN_LINUX_AARCH64_PRESET=ON \
-  -DNANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE=/path/to/your/toolchain.cmake \
-  -DNANOAI_NCNN_BUILD_MODE=PACKAGE
-```
-
-### 4. Android 交叉编译
 
 ```bash
 cmake -S . -B build_android \
@@ -126,9 +86,7 @@ cmake -S . -B build_android \
   -DNANOAI_NCNN_OPENCV_DIR=/path/to/OpenCV-android-sdk/sdk/native/jni \
   -DNANOAI_NCNN_ANDROID_ABI=arm64-v8a \
   -DNANOAI_NCNN_ANDROID_PLATFORM=android-26 \
-  -DNANOAI_NCNN_BUILD_MODE=PROJECTS \
-  -DNANOAI_NCNN_PROJECTS=car_project
-
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install
 cmake --build build_android -j
 ```
 
@@ -141,10 +99,12 @@ cmake --build build_android -j
 - `NANOAI_NCNN_LINUX_AARCH64_PRESET` 与 `NANOAI_NCNN_ANDROID_PRESET` 互斥
 - 预设启用后，若未手动指定 `CMAKE_TOOLCHAIN_FILE`，会自动注入对应 toolchain
 
+
 ## 文档导航
 
 - [英文版 README](README.md)
 - [打包与 find_package 指南](docs/find_package_and_packaging_guide.md)
+
 
 ## 许可证
 

@@ -1,3 +1,58 @@
+NanoAI_NCNN is a high-performance, installable C++ inference framework for NCNN-based edge deployment. It is always installed as a reusable CMake package (via `find_package`), and users can optionally build examples for learning and testing. All dependencies are linked via INTERFACE, and the framework is designed for stable, high-throughput deployment chains on platforms such as Linux aarch64 and Android.
+
+## Core Features
+
+1. **Always installable as a framework**: NanoAI_NCNN is always installed as a CMake package, reusable via `find_package(NanoAI_NCNN CONFIG REQUIRED)`.
+2. **Examples are optional**: Example programs are built only if `-DNANOAI_NCNN_BUILD_EXAMPLES=ON` is set.
+3. **INTERFACE linkage**: All dependencies (NanoAIFlow, OpenCV, NCNN, etc.) are linked via INTERFACE, making integration robust and modular.
+4. **High-throughput inference pipelines**: Built on NanoAIFlow, supports concurrent, ordered, and strongly typed inference chains.
+5. **Multi-platform edge deployment**: Supports Linux aarch64 and Android, with toolchain and dependency configuration for each platform.
+6. **Explicit dependency and cross-compilation workflow**: Clear configuration for NCNN, OpenCV, Android NDK, etc.; presets for cross-compilation.
+## Repository Layout
+
+- `include`: public headers
+- `cmake`: build scripts and third-party dependency configuration
+- `examples`: optional example programs (build with `-DNANOAI_NCNN_BUILD_EXAMPLES=ON`)
+- `3rdparty`: third-party dependency directory
+- `docs`: build and packaging documentation
+
+## Build & Install
+
+**NanoAI_NCNN is always installed as a framework.**
+
+### 1. Build and install the framework only
+
+```bash
+cmake -S . -B build_pkg \
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
+  -DCMAKE_INSTALL_PREFIX=/your/install/prefix
+cmake --build build_pkg -j
+cmake --install build_pkg
+```
+
+### 2. Build with examples (optional)
+
+```bash
+cmake -S . -B build_example \
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
+  -DNANOAI_NCNN_BUILD_EXAMPLES=ON
+cmake --build build_example -j
+```
+
+### 3. Cross-compilation presets
+
+- `NANOAI_NCNN_LINUX_AARCH64_PRESET`: Enable Linux aarch64 cross-compilation
+- `NANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE`: Custom toolchain file for Linux aarch64
+- `NANOAI_NCNN_ANDROID_PRESET`: Enable Android cross-compilation
+- `NANOAI_NCNN_ANDROID_NDK_PATH`: Android NDK root directory
+## Documentation
+
+- [Chinese README](README_zh.md)
+- [Packaging and find_package guide](docs/find_package_and_packaging_guide.md)
+
+## License
+
+This project is licensed under Apache License 2.0. See [LICENSE](LICENSE).
 # NanoAI_NCNN
 
 English | [中文](README_zh.md)

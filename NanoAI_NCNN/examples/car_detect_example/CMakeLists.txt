@@ -20,10 +20,10 @@ else()
     )
 endif()
 
-set(NANOAI_NCNN_CAR_TARGET NanoAI_ncnn_car_project)
+set(NANOAI_NCNN_CAR_TARGET NanoAI_ncnn_car_detect_example)
 
 add_executable(${NANOAI_NCNN_CAR_TARGET}
-    ${CMAKE_CURRENT_LIST_DIR}/src/car_demo_main.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/main.cpp
 )
 
 target_include_directories(${NANOAI_NCNN_CAR_TARGET}

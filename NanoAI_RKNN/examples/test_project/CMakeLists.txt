@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.16)
 # 该子项目不支持独立构建，必须通过 NanoAI_RKNN 根 CMake 选择构建。
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     message(FATAL_ERROR
-        "projects/test_project does not support standalone configure. "
-        "Configure from NanoAI_RKNN root with -DNANOAI_RKNN_BUILD_MODE=PROJECTS and select this project. "
+        "examples/test_project does not support standalone configure. "
+        "Configure from NanoAI_RKNN root with -DNANOAI_RKNN_BUILD_EXAMPLES=ON and select this example. "
         "Cross-compiler and tool paths should be provided from the root configure/build invocation."
     )
 endif()

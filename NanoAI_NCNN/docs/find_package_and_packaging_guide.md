@@ -38,37 +38,29 @@
 
 - `NANOAI_NCNN_LINUX_AARCH64_PRESET` 与 `NANOAI_NCNN_ANDROID_PRESET` 互斥，不能同时开启。
 - 启用任一预设且未手动指定 `CMAKE_TOOLCHAIN_FILE` 时，会自动注入对应 toolchain。
+并且会自动生成项目开关，例如：
 
-### 2.3 第三方依赖开关
-
-来自 `cmake/NanoAINCNNThirdParty.cmake`：
-
-- `NANOAI_NCNN_WITH_NCNN`
-- `NANOAI_NCNN_WITH_OPENCV`
-- `NANOAI_NCNN_NCNN_INCLUDE_DIR`
-- `NANOAI_NCNN_NCNN_LIBRARY_DIR`
-- `NANOAI_NCNN_NCNN_LIBRARY`
-- `NANOAI_NCNN_OPENCV_DIR`
-
-## 3. 方案 A：构建并安装第三方包（PACKAGE）
-
-### 3.1 配置与安装
-
-先准备 NanoAIFlow 依赖（任选一种）：
-
-- 通过 `-DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install`
-- 或通过 `-DCMAKE_PREFIX_PATH=/path/to/NanoAIFlow/install`
-- 或通过 `-DNanoAIFlow_DIR=/path/to/NanoAIFlow/install/lib/cmake/NanoAIFlow`
+- `NANOAI_ENABLE_PROJECT_CAR_PROJECT`
 
 ```bash
-cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_pkg \
-  -DNANOAI_NCNN_BUILD_MODE=PACKAGE \
-  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DCMAKE_INSTALL_PREFIX=/your/install/prefix
+cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_android \
 
-cmake --build NanoAI_NCNN/build_pkg -j
-cmake --install NanoAI_NCNN/build_pkg
-```
+# NanoAI_NCNN 安装、find_package 与交叉编译指南
+
+本指南说明如何始终将 NanoAI_NCNN 安装为可复用 CMake 包，并在第三方项目中通过 find_package 引入。examples 可选构建，主库始终 install。
+
+## 1. 安装 NanoAI_NCNN（始终 install 框架）
+
+在 NanoAI_NCNN 目录执行：
+
+  cmake -S . -B build_pkg -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install -DCMAKE_INSTALL_PREFIX=/your/install/prefix
+  cmake --build build_pkg -j
+  cmake --install build_pkg
+
+如需构建 examples，可加 -DNANOAI_NCNN_BUILD_EXAMPLES=ON
+
+  cmake -S . -B build_example -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install -DNANOAI_NCNN_BUILD_EXAMPLES=ON
+  cmake --build build_example -j
 
 安装后会导出：
 
@@ -76,86 +68,39 @@ cmake --install NanoAI_NCNN/build_pkg
 - `NanoAI_NCNNConfigVersion.cmake`
 - `NanoAI_NCNNTargets.cmake`
 
-### 3.2 调用方使用示例
+## 2. 第三方项目中使用 find_package
 
 ```cmake
 find_package(NanoAI_NCNN CONFIG REQUIRED)
-
 add_executable(app main.cpp)
 target_link_libraries(app PRIVATE NanoAI_NCNN::NanoAI_NCNN)
 ```
 
 若安装前缀不在系统默认搜索路径：
 
-```bash
-cmake -S . -B build -DCMAKE_PREFIX_PATH=/your/install/prefix
-```
+  cmake -S . -B build -DCMAKE_PREFIX_PATH=/your/install/prefix
 
-## 4. 方案 B：构建项目（PROJECTS）
+## 3. 交叉编译与依赖配置
 
-### 4.1 选择性编译
+### 3.1 交叉编译预设
 
-`NANOAI_NCNN_PROJECTS` 可选：
+- `NANOAI_NCNN_LINUX_AARCH64_PRESET`：启用 Linux aarch64 交叉编译
+- `NANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE`：自定义 toolchain 文件
+- `NANOAI_NCNN_ANDROID_PRESET`：启用 Android 交叉编译
+- `NANOAI_NCNN_ANDROID_NDK_PATH`：Android NDK 根目录
+- `NANOAI_NCNN_ANDROID_ABI`：Android ABI（默认 arm64-v8a）
+- `NANOAI_NCNN_ANDROID_PLATFORM`：Android API 级别（默认 android-26）
 
-- `ALL`：构建 `projects/` 下所有项目
-- `NONE`：不构建任何项目
-- `name1;name2`：仅构建指定项目
+注意：
+- `NANOAI_NCNN_LINUX_AARCH64_PRESET` 与 `NANOAI_NCNN_ANDROID_PRESET` 互斥，不能同时开启。
+- 启用任一预设且未手动指定 `CMAKE_TOOLCHAIN_FILE` 时，会自动注入对应 toolchain。
 
-并且会自动生成项目开关，例如：
+### 3.2 依赖配置
 
-- `NANOAI_ENABLE_PROJECT_CAR_PROJECT`
-
-### 4.2 示例命令
-
-仅构建 `car_project`：
-
-```bash
-cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_proj \
-  -DNANOAI_NCNN_BUILD_MODE=PROJECTS \
-  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DNANOAI_NCNN_PROJECTS=car_project
-
-cmake --build NanoAI_NCNN/build_proj -j
-```
-
-构建全部项目：
-
-```bash
-cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_proj_all \
-  -DNANOAI_NCNN_BUILD_MODE=PROJECTS \
-  -DNANOAI_NCNN_PROJECTS=ALL
-
-cmake --build NanoAI_NCNN/build_proj_all -j
-```
-
-### 4.3 Linux aarch64 交叉编译示例
-
-```bash
-cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_linux_aarch64 \
-  -DNANOAI_NCNN_LINUX_AARCH64_PRESET=ON \
-  -DNANOAI_NCNN_BUILD_MODE=PACKAGE
-
-cmake --build NanoAI_NCNN/build_linux_aarch64 -j
-```
-
-如需自定义 toolchain：
-
-```bash
-cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_linux_aarch64 \
-  -DNANOAI_NCNN_LINUX_AARCH64_PRESET=ON \
-  -DNANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE=/path/to/your/toolchain.cmake \
-  -DNANOAI_NCNN_BUILD_MODE=PACKAGE
-```
-
-### 4.4 Android 交叉编译示例
-
-说明：Android NDK、NCNN、OpenCV 均需外部传入，仓库不再提供默认路径。
-
-```bash
-cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_android \
-  -DNANOAI_NCNN_ANDROID_PRESET=ON \
-  -DNANOAI_NCNN_ANDROID_NDK_PATH=/path/to/android-ndk \
-  -DNANOAI_NCNN_NCNN_INCLUDE_DIR=/path/to/ncnn/android-aarch64/install/include \
+- `NANOAI_NCNN_NCNN_INCLUDE_DIR`
+- `NANOAI_NCNN_NCNN_LIBRARY_DIR`
+- `NANOAI_NCNN_NCNN_LIBRARY`
+- `NANOAI_NCNN_OPENCV_DIR`
   -DNANOAI_NCNN_NCNN_LIBRARY_DIR=/path/to/ncnn/android-aarch64/install/lib \
   -DNANOAI_NCNN_OPENCV_DIR=/path/to/OpenCV-android-sdk/sdk/native/jni \
   -DNANOAI_NCNN_ANDROID_ABI=arm64-v8a \

@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "nanoai_ncnn/cv/ncnn_cv_types.hpp"
-#include "nanoai_ncnn/projects/gaotiepaiwu/paiwu_pipeline.hpp"
+#include "car_pipeline.hpp"
 
 namespace
 {
@@ -14,15 +14,15 @@ namespace
         std::string bin_path;
         std::string image_path;
         std::string output_path{"output.jpg"};
-        std::string input_node{"in0"};
-        std::string output_node{"out0"};
+        std::string input_node{"images"};
+        std::string output_node{"output0"};
     };
 
     void print_usage(const char *exe)
     {
         std::cout << "Usage: " << exe
-                  << " --param paiwu_detect.param --bin paiwu_detect.bin --image input.jpg"
-                  << " [--output output.jpg] [--input-node in0] [--output-node out0]"
+                  << " --param model.param --bin model.bin --image input.jpg"
+                  << " [--output output.jpg] [--input-node images] [--output-node output0]"
                   << std::endl;
     }
 
@@ -88,8 +88,8 @@ int main(int argc, char **argv)
 
     try
     {
-        auto pipeline = NanoAI_NCNN::Projects::GaoTiePaiWu::make_paiwu_pipeline(
-            "gaotiepaiwu_pipeline",
+        auto pipeline = NanoAI_NCNN::Projects::CarDetectionExample::make_car_pipeline(
+            "car_project_pipeline",
             args.param_path,
             args.bin_path,
             args.input_node,
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Detection failed: " << e.what() << std::endl;
+        std::cerr << "Pipeline failed: " << e.what() << std::endl;
         return 1;
     }
 

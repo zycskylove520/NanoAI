@@ -3,25 +3,25 @@
 本文档用于说明：
 
 1. 有哪些可配置项。
-2. 如何构建第三方包（`PACKAGE`）。
-3. 如何构建项目（`PROJECTS`）。
-4. 如何选择性编译 `projects/` 子项目。
+2. 如何构建并安装第三方包。
+3. 如何构建示例（`examples`）。
+4. 如何选择性编译 `examples/` 子项目。
 
-## 1. 构建模式
+## 1. 构建行为
 
-`NanoAI_RKNN` 通过 `NANOAI_RKNN_BUILD_MODE` 选择模式，二选一：
+`NanoAI_RKNN` 始终支持导出/安装 CMake 包，示例构建由开关控制：
 
-- `PACKAGE`：生成并安装可复用 CMake 包（支持 `find_package`）。
-- `PROJECTS`：构建 `projects/` 下项目。
+- `NANOAI_RKNN_BUILD_EXAMPLES=OFF`：仅构建并安装可复用 CMake 包（支持 `find_package`）。
+- `NANOAI_RKNN_BUILD_EXAMPLES=ON`：在上述基础上，额外构建 `examples/` 下示例。
 
-默认值：`PACKAGE`
+默认值：`NANOAI_RKNN_BUILD_EXAMPLES=OFF`
 
 ## 2. 顶层 CMake 主要选项
 
-### 2.1 模式与路径
+### 2.1 示例开关与路径
 
-- `NANOAI_RKNN_BUILD_MODE`：`PACKAGE` / `PROJECTS`
-- `NANOAI_RKNN_PROJECTS`：`ALL` / `NONE` / `projA;projB`（仅 `PROJECTS` 模式有效）
+- `NANOAI_RKNN_BUILD_EXAMPLES`：`ON` / `OFF`
+- `NANOAI_RKNN_EXAMPLES`：`ALL` / `exampleA;exampleB`（仅 `NANOAI_RKNN_BUILD_EXAMPLES=ON` 时生效）
 - `NANOAIFLOW_ROOT`：NanoAIFlow 安装前缀（可选）
 - `NANOAI_RKNN_INSTALL_CMAKEDIR`：安装时导出 CMake 配置文件目录
 
@@ -48,7 +48,7 @@
 - `NANOAI_RKNN_JPEG_TURBO_ROOT`
 - `NANOAI_RKNN_UTILS_ROOT`
 
-## 3. 方案 A：构建并安装第三方包（PACKAGE）
+## 3. 方案 A：构建并安装第三方包
 
 ### 3.1 配置与安装
 
@@ -60,7 +60,7 @@
 
 ```bash
 cmake -S NanoAI_RKNN -B NanoAI_RKNN/build_pkg \
-  -DNANOAI_RKNN_BUILD_MODE=PACKAGE \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=OFF \
   -DCMAKE_TOOLCHAIN_FILE=NanoAI_RKNN/cmake/toolchains/rknn-aarch64-gcc.cmake \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
   -DNANOAI_RKNN_RUNTIME_INCLUDE_DIR=/path/to/librknn_api/include \
@@ -99,41 +99,40 @@ target_link_libraries(app PRIVATE NanoAI_RKNN::NanoAI_RKNN)
 cmake -S . -B build -DCMAKE_PREFIX_PATH=/your/install/prefix
 ```
 
-## 4. 方案 B：构建项目（PROJECTS）
+## 4. 方案 B：构建示例（examples）
 
 ### 4.1 选择性编译
 
-`NANOAI_RKNN_PROJECTS` 可选：
+`NANOAI_RKNN_EXAMPLES` 可选：
 
-- `ALL`：构建 `projects/` 下所有项目
-- `NONE`：不构建任何项目
-- `name1;name2`：仅构建指定项目
+- `ALL`：构建 `examples/` 下所有示例
+- `name1;name2`：仅构建指定示例
 
-并且会自动生成项目开关，例如：
+并且会自动生成示例开关，例如：
 
-- `NANOAI_ENABLE_PROJECT_TEST_PROJECT`
+- `NANOAI_ENABLE_EXAMPLE_TEST_PROJECT`
 
 ### 4.2 示例命令
 
-仅构建 `test_project`：
+仅构建 `test_project` 示例：
 
 ```bash
 cmake -S NanoAI_RKNN -B NanoAI_RKNN/build_proj \
-  -DNANOAI_RKNN_BUILD_MODE=PROJECTS \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=ON \
   -DCMAKE_TOOLCHAIN_FILE=NanoAI_RKNN/cmake/toolchains/rknn-aarch64-gcc.cmake \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DNANOAI_RKNN_PROJECTS=test_project
+  -DNANOAI_RKNN_EXAMPLES=test_project
 
 cmake --build NanoAI_RKNN/build_proj -j
 ```
 
-构建全部项目：
+构建全部示例：
 
 ```bash
 cmake -S NanoAI_RKNN -B NanoAI_RKNN/build_proj_all \
-  -DNANOAI_RKNN_BUILD_MODE=PROJECTS \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=ON \
   -DCMAKE_TOOLCHAIN_FILE=NanoAI_RKNN/cmake/toolchains/rknn-aarch64-gcc.cmake \
-  -DNANOAI_RKNN_PROJECTS=ALL
+  -DNANOAI_RKNN_EXAMPLES=ALL
 
 cmake --build NanoAI_RKNN/build_proj_all -j
 ```
@@ -151,8 +150,8 @@ cmake --build NanoAI_RKNN/build_proj_all -j
 
 ```bash
 cmake -S NanoAI_RKNN -B NanoAI_RKNN/build_cross \
-  -DNANOAI_RKNN_BUILD_MODE=PROJECTS \
-  -DNANOAI_RKNN_PROJECTS=test_project \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=ON \
+  -DNANOAI_RKNN_EXAMPLES=test_project \
   -DCMAKE_TOOLCHAIN_FILE=/path/to/toolchain.cmake \
   -DCMAKE_SYSROOT=/path/to/sysroot \
   -DCMAKE_PREFIX_PATH=/path/to/deps
@@ -164,11 +163,11 @@ cmake --build NanoAI_RKNN/build_cross --target NanoAI_rknn_demo -j
 
 ### 6.1 子项目独立构建
 
-`projects/test_project` 不支持独立配置，必须从 `NanoAI_RKNN` 根目录进入。
+`examples/test_project` 不支持独立配置，必须从 `NanoAI_RKNN` 根目录进入。
 
-### 6.2 模式互斥
+### 6.2 示例开关说明
 
-`PACKAGE` 与 `PROJECTS` 为互斥模式，不能同时启用。
+`NANOAI_RKNN_BUILD_EXAMPLES` 仅控制是否额外构建示例，不影响包导出与安装能力。
 
 ### 6.3 依赖缺失排查
 

@@ -6,7 +6,7 @@
 
 #include "nanoai_flow/core/types.h"
 
-namespace NanoAI_NCNN::Projects::CarProject
+namespace NanoAI_NCNN::Projects::CarDetectionExample
 {
     enum class CarType : NanoAI_FLOW::nanoai_u8
     {
@@ -55,4 +55,4 @@ namespace NanoAI_NCNN::Projects::CarProject
 
     using CarDetections = std::vector<CarBBox>;
 
-} // namespace NanoAI_NCNN::Projects::CarProject
+} // namespace NanoAI_NCNN::Projects::CarDetectionExample

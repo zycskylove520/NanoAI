@@ -4,9 +4,9 @@
 #include <cmath>
 
 #include "nanoai_ncnn/core/ncnn_types.hpp"
-#include "nanoai_ncnn/projects/car_project/car_types.hpp"
+#include "car_types.hpp"
 
-namespace NanoAI_NCNN::Projects::CarProject
+namespace NanoAI_NCNN::Projects::CarDetectionExample
 {
     inline CarDetections decode_car_detections(const NcnnInferResult &result)
     {

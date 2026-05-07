@@ -5,28 +5,28 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Edit these paths to your local dependency locations.
-CMAKE_TOOLCHAIN_FILE="${SCRIPT_DIR}/3rdparty/android-ndk-r29/build/cmake/android.toolchain.cmake"
-NCNN_INCLUDE_DIR="${SCRIPT_DIR}/3rdparty/ncnn/android-aarch64/install/include"
-NCNN_LIBRARY_DIR="${SCRIPT_DIR}/3rdparty/ncnn/android-aarch64/install/lib"
-NANOAI_NCNN_OPENCV_DIR="${SCRIPT_DIR}/3rdparty/OpenCV-android-sdk/sdk/native/jni"
+TOOLCHAIN_FILE="${SCRIPT_DIR}/cmake/toolchains/ncnn-linux-x86_64-gcc.cmake"
+NCNN_INCLUDE_DIR="${SCRIPT_DIR}/3rdparty/ncnn/ubuntu-x86_64/install/include"
+NCNN_LIBRARY_DIR="${SCRIPT_DIR}/3rdparty/ncnn/ubuntu-x86_64/install/lib"
+NANOAI_NCNN_OPENCV_DIR=""  # 不填则自动寻找linux系统上的opencv
 NANOAIFLOW_PREFIX="${REPO_ROOT}/out/install/nanoai_flow"
 NANOAIFLOW_CMAKE_DIR="${NANOAIFLOW_PREFIX}/lib/cmake/NanoAIFlow"
 
 # NanoAI_NCNN is always package-installable. Examples are optional.
-NANOAI_NCNN_BUILD_EXAMPLES="ON"
+NANOAI_NCNN_BUILD_EXAMPLES="OFF"
 NANOAI_NCNN_EXAMPLES="ALL"
 
-BUILD_DIR="${SCRIPT_DIR}/build_android_external"
+BUILD_DIR="${SCRIPT_DIR}/build_linux_external"
 JOBS="$(nproc 2>/dev/null || echo 4)"
 
 print_help() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
 
-Build NanoAI_NCNN Android external dependencies and project targets.
+Build NanoAI_NCNN Linux x86_64 external dependencies and project targets.
 
 Options:
-  -B, --build-dir <dir>    Build directory (default: ./build_android_external)
+  -B, --build-dir <dir>    Build directory (default: ./build_linux_external)
   -j, --jobs <N>           Parallel build jobs (default: nproc)
   -h, --help               Show this help message and exit.
 
@@ -35,7 +35,7 @@ Current defaults:
   JOBS                      ${JOBS}
   NANOAI_NCNN_BUILD_EXAMPLES ${NANOAI_NCNN_BUILD_EXAMPLES}
   NANOAI_NCNN_EXAMPLES      ${NANOAI_NCNN_EXAMPLES}
-  CMAKE_TOOLCHAIN_FILE      ${CMAKE_TOOLCHAIN_FILE}
+  TOOLCHAIN_FILE            ${TOOLCHAIN_FILE}
   NCNN_INCLUDE_DIR          ${NCNN_INCLUDE_DIR}
   NCNN_LIBRARY_DIR          ${NCNN_LIBRARY_DIR}
   NANOAI_NCNN_OPENCV_DIR    ${NANOAI_NCNN_OPENCV_DIR}
@@ -43,10 +43,10 @@ Current defaults:
   NANOAIFLOW_CMAKE_DIR      ${NANOAIFLOW_CMAKE_DIR}
 
 Examples:
-  ./external_deps_android_build.sh
-  ./external_deps_android_build.sh -B ./build_android_custom
-  ./external_deps_android_build.sh -j 8
-  ./external_deps_android_build.sh -B ./build_android_custom -j 8
+  ./external_deps_linux_build.sh
+  ./external_deps_linux_build.sh -B ./build_linux_custom
+  ./external_deps_linux_build.sh -j 8
+  ./external_deps_linux_build.sh -B ./build_linux_custom -j 8
 EOF
 }
 
@@ -102,8 +102,7 @@ echo "[INFO] Using NanoAIFlow_DIR=${NANOAIFLOW_CMAKE_DIR}"
 cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
   -DNANOAI_NCNN_BUILD_EXAMPLES="${NANOAI_NCNN_BUILD_EXAMPLES}" \
   -DNANOAI_NCNN_EXAMPLES="${NANOAI_NCNN_EXAMPLES}" \
-  -DNANOAI_NCNN_ANDROID_PRESET=ON \
-  -DCMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN_FILE}" \
+  -DNANOAI_NCNN_LINUX_x86_64_PRESET=ON \
   -DNANOAI_NCNN_NCNN_INCLUDE_DIR="${NCNN_INCLUDE_DIR}" \
   -DNANOAI_NCNN_NCNN_LIBRARY_DIR="${NCNN_LIBRARY_DIR}" \
   -DNANOAI_NCNN_OPENCV_DIR="${NANOAI_NCNN_OPENCV_DIR}" \

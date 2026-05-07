@@ -21,17 +21,14 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/NanoAIRKNNCommon.cmake)
 nanoai_setup_global_options()
 
 # ======================================================
-# 构建模式
+# 构建行为
+# 始终导出/安装 NanoAI_RKNN 包；示例构建由开关控制。
 # ======================================================
-set(NANOAI_RKNN_BUILD_MODE "PACKAGE" CACHE STRING "Build mode: PACKAGE or PROJECTS")
-set_property(CACHE NANOAI_RKNN_BUILD_MODE PROPERTY STRINGS PACKAGE PROJECTS)
+option(NANOAI_RKNN_BUILD_EXAMPLES "Build examples under examples/" OFF)
+set(NANOAI_RKNN_EXAMPLES "ALL" CACHE STRING "Semicolon-separated example names under examples/ (ALL or example names)")
 
-string(TOUPPER "${NANOAI_RKNN_BUILD_MODE}" NANOAI_RKNN_BUILD_MODE)
-if(NOT NANOAI_RKNN_BUILD_MODE STREQUAL "PACKAGE" AND NOT NANOAI_RKNN_BUILD_MODE STREQUAL "PROJECTS")
-    message(FATAL_ERROR "Invalid NANOAI_RKNN_BUILD_MODE='${NANOAI_RKNN_BUILD_MODE}'. Expected PACKAGE or PROJECTS.")
-endif()
-
-message(STATUS "NanoAI_RKNN build mode: ${NANOAI_RKNN_BUILD_MODE}")
+message(STATUS "NanoAI_RKNN build examples: ${NANOAI_RKNN_BUILD_EXAMPLES}")
+message(STATUS "NanoAI_RKNN selected examples: ${NANOAI_RKNN_EXAMPLES}")
 
 # NanoAI_RKNN only supports ARM cross-compilation.
 if(NOT CMAKE_CROSSCOMPILING)
@@ -110,7 +107,7 @@ if(CMAKE_CROSSCOMPILING)
 endif()
 
 # ======================================================
-# 目标定义（projects 目录外，仅头文件发布）
+# 目标定义（examples 目录外，仅头文件发布）
 # ======================================================
 if(NANOAI_RKNN_SRCS)
     add_library(NanoAI_RKNN SHARED
@@ -152,6 +149,11 @@ else()
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
 
+    target_link_directories(NanoAI_RKNN
+        INTERFACE
+        ${NANOAI_RKNN_BUILD_INTERFACE_LINK_DIRS}
+    )
+
     target_link_libraries(NanoAI_RKNN
         INTERFACE
         ${NANOAI_RKNN_BASE_LIBS}
@@ -162,45 +164,43 @@ endif()
 add_library(NanoAI_RKNN::NanoAI_RKNN ALIAS NanoAI_RKNN)
 
 # ======================================================
-# 包导出与安装
+# 包导出与安装（始终可用）
 # ======================================================
-if(NANOAI_RKNN_BUILD_MODE STREQUAL "PACKAGE")
-    install(TARGETS NanoAI_RKNN
-        EXPORT NanoAI_RKNNTargets
-    )
+install(TARGETS NanoAI_RKNN
+    EXPORT NanoAI_RKNNTargets
+)
 
-    install(DIRECTORY include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
+install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
-    write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/NanoAI_RKNNConfigVersion.cmake"
-        VERSION ${PROJECT_VERSION}
-        COMPATIBILITY SameMajorVersion
-    )
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/NanoAI_RKNNConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
 
-    configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/NanoAI_RKNNConfig.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/NanoAI_RKNNConfig.cmake"
-        INSTALL_DESTINATION ${NANOAI_RKNN_INSTALL_CMAKEDIR}
-    )
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/NanoAI_RKNNConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/NanoAI_RKNNConfig.cmake"
+    INSTALL_DESTINATION ${NANOAI_RKNN_INSTALL_CMAKEDIR}
+)
 
-    install(EXPORT NanoAI_RKNNTargets
-        FILE NanoAI_RKNNTargets.cmake
-        NAMESPACE NanoAI_RKNN::
-        DESTINATION ${NANOAI_RKNN_INSTALL_CMAKEDIR}
-    )
+install(EXPORT NanoAI_RKNNTargets
+    FILE NanoAI_RKNNTargets.cmake
+    NAMESPACE NanoAI_RKNN::
+    DESTINATION ${NANOAI_RKNN_INSTALL_CMAKEDIR}
+)
 
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/NanoAI_RKNNConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/NanoAI_RKNNConfigVersion.cmake"
-        DESTINATION ${NANOAI_RKNN_INSTALL_CMAKEDIR}
-    )
-endif()
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/NanoAI_RKNNConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/NanoAI_RKNNConfigVersion.cmake"
+    DESTINATION ${NANOAI_RKNN_INSTALL_CMAKEDIR}
+)
 
 # ======================================================
-# 可执行项目构建（projects 目录内）
+# 示例构建（可选）
 # ======================================================
-if(NANOAI_RKNN_BUILD_MODE STREQUAL "PROJECTS")
-    add_subdirectory(projects)
+if(NANOAI_RKNN_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()

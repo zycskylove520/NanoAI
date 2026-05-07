@@ -17,9 +17,9 @@ NanoAI_RKNN is a high-performance C++ inference component for Rockchip RKNN edge
 - Suitable for industrial vision, embedded AI, and edge inference applications
 
 ### 3. Flexible engineering integration
-- Supports two mutually exclusive build modes: `PACKAGE` and `PROJECTS`
-- Can be published as a reusable CMake package or built directly as application examples
-- Supports selective project builds to avoid unnecessary compilation cost
+- Always exports/installable as a reusable CMake package
+- Examples can be enabled optionally for learning and integration validation
+- Supports selective example builds to avoid unnecessary compilation cost
 
 ### 4. Standard CMake package export
 - Can be consumed by upper-layer projects through `find_package`
@@ -34,21 +34,21 @@ NanoAI_RKNN is a high-performance C++ inference component for Rockchip RKNN edge
 
 - `include`: public headers
 - `cmake`: build scripts and third-party dependency configuration
-- `projects`: example or application entry points
+- `examples`: example or application entry points
 - `3rdparty`: third-party dependency directory
 - `docs`: build and packaging documentation
 
-## Build Modes
+## Build Behavior
 
-1. `PACKAGE`
-   - Build and install a reusable package that can be consumed with `find_package`
-2. `PROJECTS`
-   - Build applications or examples under `projects/`
+1. Package export/install is always available
+  - Build and install a reusable package that can be consumed with `find_package`
+2. Examples are optional
+  - Enable examples under `examples/` with CMake options
 
 ## Key Configuration Options
 
-- `NANOAI_RKNN_BUILD_MODE`: `PACKAGE` or `PROJECTS`, default `PACKAGE`
-- `NANOAI_RKNN_PROJECTS`: active only in `PROJECTS` mode, default `ALL`
+- `NANOAI_RKNN_BUILD_EXAMPLES`: `ON` or `OFF`, default `OFF`
+- `NANOAI_RKNN_EXAMPLES`: active when `NANOAI_RKNN_BUILD_EXAMPLES=ON`, default `ALL`
 - `NANOAI_RKNN_INSTALL_CMAKEDIR`: install directory for package config files
 - `NANOAIFLOW_ROOT`: installation prefix of NanoAIFlow
 
@@ -74,7 +74,7 @@ Make sure NanoAIFlow can be found by one of the following:
 
 ```bash
 cmake -S . -B build_pkg \
-  -DNANOAI_RKNN_BUILD_MODE=PACKAGE \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=OFF \
   -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/rknn-aarch64-gcc.cmake \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
   -DNANOAI_RKNN_RUNTIME_INCLUDE_DIR=/path/to/librknn_api/include \
@@ -92,14 +92,14 @@ cmake --install build_pkg
 
 You can also use [external_deps_rknn_build.sh](external_deps_rknn_build.sh) after adjusting the path variables in the script.
 
-### 2. Build a selected project
+### 2. Build selected examples
 
 ```bash
 cmake -S . -B build_proj \
-  -DNANOAI_RKNN_BUILD_MODE=PROJECTS \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=ON \
   -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/rknn-aarch64-gcc.cmake \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DNANOAI_RKNN_PROJECTS=test_project
+  -DNANOAI_RKNN_EXAMPLES=test_project
 
 cmake --build build_proj -j
 ```
@@ -108,8 +108,8 @@ cmake --build build_proj -j
 
 ```bash
 cmake -S . -B build_cross \
-  -DNANOAI_RKNN_BUILD_MODE=PROJECTS \
-  -DNANOAI_RKNN_PROJECTS=test_project \
+  -DNANOAI_RKNN_BUILD_EXAMPLES=ON \
+  -DNANOAI_RKNN_EXAMPLES=test_project \
   -DCMAKE_TOOLCHAIN_FILE=/path/to/toolchain.cmake \
   -DCMAKE_SYSROOT=/path/to/sysroot \
   -DCMAKE_PREFIX_PATH=/path/to/deps
@@ -119,8 +119,7 @@ cmake --build build_cross --target NanoAI_rknn_demo -j
 
 ## Notes
 
-- `projects/test_project` should be built from this repository entry rather than configured as a standalone project
-- `PACKAGE` and `PROJECTS` are mutually exclusive
+- `examples/test_project` should be built from this repository entry rather than configured as a standalone project
 - The current workflow primarily targets `aarch64/arm64` cross-compilation
 
 ## Documentation
