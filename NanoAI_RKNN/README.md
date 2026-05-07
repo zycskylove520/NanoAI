@@ -1,66 +1,72 @@
 # NanoAI_RKNN
 
-NanoAI_RKNN 是面向 RKNN 推理部署场景的 C++ 组件，基于 CMake 构建，并与 NanoAIFlow 协同工作。
+English | [中文](README_zh.md)
 
-项目目标：
+NanoAI_RKNN is a high-performance C++ inference component for Rockchip RKNN edge deployment. It builds RKNN inference capability on top of NanoAIFlow's strongly typed concurrent pipeline model, making it suitable for complete engineering chains that include loading, preprocessing, inference, and postprocessing.
 
-- 提供可复用的 RKNN 推理相关接口与管线能力。
-- 支持作为第三方包发布，便于被其他工程通过 CMake 复用。
-- 支持在仓库内直接构建 projects 子目录中的示例/应用项目。
+## Core Strengths
 
-NanoAI_RKNN 支持两种互斥构建模式：
+### 1. Deep integration with NanoAIFlow
+- Load, Preprocess, Infer, and Postprocess stages can be placed in one unified concurrent pipeline
+- Well suited for fixed-structure, high-throughput edge inference systems
+- Lets you manage model execution and surrounding data flow in one consistent framework
 
-1. `PACKAGE`：构建并安装为可 `find_package` 的第三方包。
-2. `PROJECTS`：构建 `projects/` 下可执行项目，支持按需选择子项目。
+### 2. Optimized for RKNN edge deployment
+- Focused on integrating Rockchip RKNN Runtime into practical C++ systems
+- Designed for `aarch64` and `arm64` edge deployment workflows
+- Suitable for industrial vision, embedded AI, and edge inference applications
 
-## 主要特性
+### 3. Flexible engineering integration
+- Supports two mutually exclusive build modes: `PACKAGE` and `PROJECTS`
+- Can be published as a reusable CMake package or built directly as application examples
+- Supports selective project builds to avoid unnecessary compilation cost
 
-- CMake 原生支持，可在 PACKAGE/PROJECTS 两种模式间切换。
-- 提供标准 CMake 包导出，可被调用方通过 `find_package` 使用。
-- 支持按子项目选择性编译，避免一次性构建全部项目。
-- 仅支持 ARM 平台交叉编译（aarch64/arm64），交叉编译参数从根 CMake 统一传入。
+### 4. Standard CMake package export
+- Can be consumed by upper-layer projects through `find_package`
+- Fits naturally into existing CMake-based engineering systems
+- Works well for modular delivery, secondary packaging, and CI/CD workflows
 
-## 仓库结构
+### 5. Explicit third-party dependency control
+- RKNN Runtime, RGA, OpenCV, stb_image, jpeg_turbo, and utils paths are passed explicitly from outside the repository
+- Better suited for complex cross-compilation environments and enterprise dependency management
 
-- include：对外头文件
-- cmake：构建脚本与第三方依赖配置
-- projects：可执行项目入口（如 test_project）
-- 3rdparty：第三方依赖目录
-- docs：使用手册与构建文档
+## Repository Layout
 
-## 文档入口
+- `include`: public headers
+- `cmake`: build scripts and third-party dependency configuration
+- `projects`: example or application entry points
+- `3rdparty`: third-party dependency directory
+- `docs`: build and packaging documentation
 
-- 详细构建与选项手册（中文）：[docs/find_package_and_packaging_guide.md](docs/find_package_and_packaging_guide.md)
+## Build Modes
 
-## 核心开关
+1. `PACKAGE`
+   - Build and install a reusable package that can be consumed with `find_package`
+2. `PROJECTS`
+   - Build applications or examples under `projects/`
 
-- `NANOAI_RKNN_BUILD_MODE`：`PACKAGE` 或 `PROJECTS`，默认 `PACKAGE`
-- `NANOAI_RKNN_PROJECTS`：仅在 `PROJECTS` 模式生效，默认 `ALL`
-- `NANOAI_RKNN_INSTALL_CMAKEDIR`：包配置文件安装目录，默认 `lib/cmake/NanoAI_RKNN`
-- `NANOAIFLOW_ROOT`：NanoAIFlow 安装前缀（用于 `find_package(NanoAIFlow)`）
+## Key Configuration Options
 
-第三方依赖开关（位于 `cmake/NanoAIRKNNThirdParty.cmake`）：
+- `NANOAI_RKNN_BUILD_MODE`: `PACKAGE` or `PROJECTS`, default `PACKAGE`
+- `NANOAI_RKNN_PROJECTS`: active only in `PROJECTS` mode, default `ALL`
+- `NANOAI_RKNN_INSTALL_CMAKEDIR`: install directory for package config files
+- `NANOAIFLOW_ROOT`: installation prefix of NanoAIFlow
 
-- `NANOAI_RKNN_WITH_RKNN_RUNTIME`
-- `NANOAI_RKNN_WITH_RGA`
-- `NANOAI_RKNN_WITH_OPENCV`
-- `NANOAI_RKNN_WITH_STB_IMAGE`
-- `NANOAI_RKNN_WITH_JPEG_TURBO`
-- `NANOAI_RKNN_WITH_UTILS`
+Common third-party dependency settings:
 
-说明：以上开关在 `aarch64/arm64` 下默认更偏向开启 RKNN/RGA 相关依赖，在非 ARM 平台默认更保守。
-当前实现中这些开关由工程强制启用，不支持关闭。
+- `NANOAI_RKNN_RUNTIME_INCLUDE_DIR`
+- `NANOAI_RKNN_RUNTIME_LIBRARY_DIR`
+- `NANOAI_RKNN_RGA_ROOT`
+- `NANOAI_RKNN_OPENCV_DIR`
+- `NANOAI_RKNN_STB_IMAGE_INCLUDE_DIR`
+- `NANOAI_RKNN_JPEG_TURBO_ROOT`
+- `NANOAI_RKNN_UTILS_ROOT`
 
-第三方路径说明：
+## Quick Start
 
-- RKNN 的第三方依赖改为外部路径传入，仓库不再提供默认内置路径。
-- 必传路径包括：RKNN Runtime、RGA、OpenCV、stb_image、jpeg_turbo、utils。
+### 1. Build and install the package
 
-## 快速命令
-
-### 1. 构建并安装第三方包
-
-先确保能找到 NanoAIFlow（任选一种）：
+Make sure NanoAIFlow can be found by one of the following:
 
 - `-DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install`
 - `-DCMAKE_PREFIX_PATH=/path/to/NanoAIFlow/install`
@@ -84,9 +90,9 @@ cmake --build build_pkg -j
 cmake --install build_pkg
 ```
 
-你也可以直接使用仓库内脚本 [external_deps_rknn_build.sh](external_deps_rknn_build.sh)，修改顶部路径变量后执行。
+You can also use [external_deps_rknn_build.sh](external_deps_rknn_build.sh) after adjusting the path variables in the script.
 
-### 2. 构建 projects 中指定子项目
+### 2. Build a selected project
 
 ```bash
 cmake -S . -B build_proj \
@@ -98,7 +104,7 @@ cmake -S . -B build_proj \
 cmake --build build_proj -j
 ```
 
-### 3. 交叉编译示例
+### 3. Cross-compilation example
 
 ```bash
 cmake -S . -B build_cross \
@@ -111,12 +117,17 @@ cmake -S . -B build_cross \
 cmake --build build_cross --target NanoAI_rknn_demo -j
 ```
 
-## 注意事项
+## Notes
 
-- `projects/test_project` 不支持独立配置，必须从仓库根 CMake 进入。
-- `PACKAGE` 与 `PROJECTS` 为互斥模式，不能同时启用。
-- 仅允许交叉编译，且目标处理器必须为 `aarch64/arm64`。
+- `projects/test_project` should be built from this repository entry rather than configured as a standalone project
+- `PACKAGE` and `PROJECTS` are mutually exclusive
+- The current workflow primarily targets `aarch64/arm64` cross-compilation
 
-## 许可证
+## Documentation
 
-本项目采用 Apache License 2.0，详见 [LICENSE](LICENSE)。
+- [Chinese README](README_zh.md)
+- [Packaging and find_package guide](docs/find_package_and_packaging_guide.md)
+
+## License
+
+This project is licensed under Apache License 2.0. See [LICENSE](LICENSE).

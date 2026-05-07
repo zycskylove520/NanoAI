@@ -1,38 +1,82 @@
 # NanoAIFlow
 
-NanoAIFlow 是一个面向 C++ 推理与数据处理场景的轻量级流程编排组件，基于 C++20 构建，当前以头文件库形式提供。
+English | [中文](README_zh.md)
 
-项目目标：
+NanoAIFlow is a strongly typed concurrent pipeline framework for high-performance C++ inference and data processing workloads. It is not a runtime graph editor for arbitrary dynamic nodes. Instead, it is designed for fixed business pipelines where throughput, ordering semantics, and type safety matter more than runtime mutability.
 
-- 提供简洁的 Pipe/Pipeline 组合能力，便于搭建可复用处理链。
-- 提供标准 CMake 包导出，方便在外部工程通过 find_package 复用。
-- 保持低接入成本，适合作为上层 AI/推理模块的流程基础设施。
+## Core Strengths
 
-## 主要特性
+### 1. Every pipe can run concurrently
+- Each pipe stage can declare its own maximum concurrency
+- Multiple stages inside one pipeline can process different requests at the same time
+- This makes it much easier to utilize multi-core CPUs than a purely serial chain or a coarse global-thread-pool model
 
-- Header-only 设计，接入简单。
-- 基于 C++20，类型推导与模板能力更完整。
-- 支持并发相关测试场景，便于验证高并发稳定性。
-- 提供示例与测试目标，便于快速验证与性能评估。
+### 2. Multiple pipes advance concurrently in one pipeline
+- The pipeline is not a barrier model where stage B waits for stage A to finish everything
+- A single `run(...)` moves through stages, while different requests can flow through different stages in parallel
+- This maps naturally to AI workloads such as Load, Preprocess, Infer, and Postprocess
 
-## 目录说明
+### 3. Stable ordering under high concurrency
+- Each stage can execute concurrently
+- Forwarding between stages is still released in global sequence order
+- You keep high throughput without forcing downstream code to repair random out-of-order behavior
 
-- include: NanoAIFlow 对外头文件
-- 3rdparty/thread-pool: 线程池头文件依赖
-- examples: 示例程序
-- test: 单元与并发相关测试
-- docs: 设计与使用文档
+### 4. Strongly typed static pipelines
+- Pipe input and output types are defined directly by `on_run(...)`
+- `NanoPipeLine<P1, P2, ...>` fixes the type flow at compile time
+- There is no `std::any`-style runtime dispatch in the core path, which reduces runtime uncertainty and maintenance cost
 
-## 快速开始
+### 5. Flexible execution policies
+- `shared_pool`: efficient default choice for most stages
+- `dedicated_pool`: isolates critical stages from the rest of the pipeline
+- `inline_run`: removes scheduling overhead for very lightweight work
 
-### 1. 仅构建库配置（默认）
+### 6. Header-only and easy to integrate
+- Low integration cost for existing codebases
+- Installable and reusable through `find_package(NanoAIFlow CONFIG REQUIRED)`
+- Suitable for monorepos, modular C++ systems, and third-party package distribution
+
+### 7. Built for real engineering workloads
+- Includes concurrency correctness tests, ordering consistency tests, and performance benchmarks
+- Supports tuple-based fan-out and automatic argument expansion between stages
+- Works well as the flow foundation for RKNN, NCNN, and other inference modules
+
+## Best-Fit Scenarios
+
+- Edge AI pipelines for CV, NLP, and speech workloads
+- Fixed-structure production chains with high throughput requirements
+- Systems that must exploit multi-core concurrency without losing deterministic ordering semantics
+
+## Design Principles
+
+- Static typing first: push type errors to compile time whenever possible
+- Stage-level concurrency: each stage controls its own concurrency and execution policy
+- Ordered forwarding: preserve stable and explainable behavior under heavy concurrency
+- Global quota control: avoid unbounded task accumulation across the whole pipeline
+
+For more details, see:
+
+- [docs/nanoai_design_philosophy.md](docs/nanoai_design_philosophy.md)
+- [docs/pipe_usage_guide.md](docs/pipe_usage_guide.md)
+
+## Repository Layout
+
+- `include`: public headers
+- `3rdparty/thread-pool`: thread pool dependency
+- `examples`: example programs
+- `test`: unit, concurrency, and performance tests
+- `docs`: design and usage documentation
+
+## Quick Start
+
+### 1. Build the library only
 
 ```bash
 cmake -S . -B build
 cmake --build build -j
 ```
 
-### 2. 启用测试
+### 2. Build with tests enabled
 
 ```bash
 cmake -S . -B build_test \
@@ -42,7 +86,7 @@ cmake --build build_test -j
 ctest --test-dir build_test --output-on-failure
 ```
 
-### 3. 启用示例
+### 3. Build with examples enabled
 
 ```bash
 cmake -S . -B build_example \
@@ -51,7 +95,7 @@ cmake -S . -B build_example \
 cmake --build build_example -j
 ```
 
-### 4. 安装为可复用 CMake 包
+### 4. Install as a reusable CMake package
 
 ```bash
 cmake -S . -B build_install \
@@ -61,17 +105,13 @@ cmake --build build_install -j
 cmake --install build_install
 ```
 
-安装后会导出 NanoAIFlowConfig.cmake 等文件，供调用方通过 find_package 查找。
+## CMake Options
 
-## CMake 选项
+- `NANOAIFLOW_BUILD_TESTS`: build tests, default `OFF`
+- `NANOAIFLOW_BUILD_EXAMPLES`: build examples, default `OFF`
+- `NANOAIFLOW_ENABLE_CPACK`: enable CPack packaging, default `OFF`
 
-- NANOAIFLOW_BUILD_TESTS: 是否构建 test 目录下测试，默认 OFF
-- NANOAIFLOW_BUILD_EXAMPLES: 是否构建 examples 示例，默认 OFF
-- NANOAIFLOW_ENABLE_CPACK: 是否启用 CPack 打包，默认 OFF
-
-## 调用方使用示例
-
-在调用方 CMakeLists.txt 中：
+## Consumer Example
 
 ```cmake
 find_package(NanoAIFlow CONFIG REQUIRED)
@@ -80,18 +120,19 @@ add_executable(app main.cpp)
 target_link_libraries(app PRIVATE NanoAI::Flow)
 ```
 
-若安装前缀不在系统默认路径，可在调用方配置时指定：
+If the install prefix is not in a default search path:
 
 ```bash
 cmake -S . -B build -DCMAKE_PREFIX_PATH=/your/install/prefix
 ```
 
-## 文档导航
+## Documentation
 
-- 打包与 find_package 指南: docs/find_package_and_packaging_guide.md
-- 设计理念: docs/nanoai_design_philosophy.md
-- Pipe 使用说明: docs/pipe_usage_guide.md
+- [Chinese README](README_zh.md)
+- [Packaging and find_package guide](docs/find_package_and_packaging_guide.md)
+- [Design philosophy](docs/nanoai_design_philosophy.md)
+- [Pipe usage guide](docs/pipe_usage_guide.md)
 
-## 许可证
+## License
 
-本项目采用 Apache License 2.0，详见 [LICENSE](LICENSE)。
+This project is licensed under Apache License 2.0. See [LICENSE](LICENSE).

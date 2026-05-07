@@ -1,69 +1,75 @@
 # NanoAI_NCNN
 
-NanoAI_NCNN 是面向 NCNN 推理部署场景的 C++ 组件，基于 CMake 构建，并与 NanoAIFlow 协同工作。
+English | [中文](README_zh.md)
 
-项目目标：
+NanoAI_NCNN is a high-performance C++ inference component for NCNN-based edge deployment. Built on top of NanoAIFlow's strongly typed concurrent pipeline model, it is suitable for complete deployment chains that include input loading, preprocessing, model inference, and postprocessing across common edge platforms such as Linux aarch64 and Android.
 
-- 提供可复用的 NCNN 推理接口与管线能力。
-- 支持作为第三方包发布，便于被其他工程通过 CMake 复用。
-- 支持在仓库内直接构建 projects 子目录中的示例/应用项目。
+## Core Strengths
 
-NanoAI_NCNN 支持两种互斥构建模式：
+### 1. High-throughput inference pipelines with NanoAIFlow
+- Load, preprocess, infer, and postprocess stages can be organized as one unified pipe chain
+- The stage-level concurrency model of NanoAIFlow can be used to improve total throughput
+- Well suited for stable-structure inference systems that need to keep multi-core CPUs busy
 
-1. `PACKAGE`：构建并安装为可 `find_package` 的第三方包。
-2. `PROJECTS`：构建 `projects/` 下可执行项目，支持按需选择子项目。
+### 2. Multi-platform edge deployment
+- Supports deployment workflows for Linux aarch64 and Android
+- Lets you select the proper toolchain and dependency configuration for each target platform
+- Suitable for edge vision, embedded AI, and mobile inference scenarios
 
-## 主要特性
+### 3. Flexible engineering integration
+- Supports two build modes: `PACKAGE` and `PROJECTS`
+- Can be published as a reusable component or built directly as in-repository applications
+- Supports selective project builds to keep build scope under control
 
-- CMake 原生支持，可在 PACKAGE/PROJECTS 两种模式间切换。
-- 提供标准 CMake 包导出，可被调用方通过 `find_package` 使用。
-- 支持按子项目选择性编译，避免一次性构建全部项目。
-- 提供基于 NanoAIFlow 的 `Load -> Preprocess -> Infer -> Postprocess` pipe 连接方式。
+### 4. Standard CMake package export
+- Can be consumed by third-party projects through `find_package`
+- Fits naturally into existing CMake toolchains and modular architectures
 
-## 仓库结构
+### 5. Clear dependency and cross-compilation workflow
+- Supports explicit configuration of NCNN, OpenCV, Android NDK, and other required paths
+- Linux aarch64 and Android presets are separated for better control over build paths
 
-- include：对外头文件
-- cmake：构建脚本与第三方依赖配置
-- projects：可执行项目入口（当前包含 car_project）
-- 3rdparty：第三方依赖目录
-- docs：使用手册与构建文档
+## Repository Layout
 
-## 文档入口
+- `include`: public headers
+- `cmake`: build scripts and third-party dependency configuration
+- `projects`: example or application entry points
+- `3rdparty`: third-party dependency directory
+- `docs`: build and packaging documentation
 
-- 详细构建与选项手册（中文）：[docs/find_package_and_packaging_guide.md](docs/find_package_and_packaging_guide.md)
+## Build Modes
 
-## 核心开关
+1. `PACKAGE`
+   - Build and install a reusable package that can be consumed with `find_package`
+2. `PROJECTS`
+   - Build applications or examples under `projects/`
 
-- `NANOAI_NCNN_BUILD_MODE`：`PACKAGE` 或 `PROJECTS`，默认 `PACKAGE`
-- `NANOAI_NCNN_PROJECTS`：仅在 `PROJECTS` 模式生效，默认 `ALL`
-- `NANOAI_NCNN_INSTALL_CMAKEDIR`：包配置文件安装目录，默认 `lib/cmake/NanoAI_NCNN`
-- `NANOAIFLOW_ROOT`：NanoAIFlow 安装前缀（平台无关）
+## Key Configuration Options
 
-预设开关：
+- `NANOAI_NCNN_BUILD_MODE`: `PACKAGE` or `PROJECTS`, default `PACKAGE`
+- `NANOAI_NCNN_PROJECTS`: active only in `PROJECTS` mode, default `ALL`
+- `NANOAI_NCNN_INSTALL_CMAKEDIR`: install directory for package config files
+- `NANOAIFLOW_ROOT`: installation prefix of NanoAIFlow
 
-- `NANOAI_NCNN_LINUX_AARCH64_PRESET`：启用 Linux aarch64 交叉编译预设（默认 `OFF`）
-- `NANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE`：Linux aarch64 toolchain 文件路径（默认 `cmake/toolchains/ncnn-aarch64-gcc.cmake`）
-- `NANOAI_NCNN_ANDROID_PRESET`：启用 Android 交叉编译预设（默认 `OFF`）
+Platform-related presets:
 
-说明：
+- `NANOAI_NCNN_LINUX_AARCH64_PRESET`
+- `NANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE`
+- `NANOAI_NCNN_ANDROID_PRESET`
+- `NANOAI_NCNN_ANDROID_NDK_PATH`
 
-- `NANOAI_NCNN_LINUX_AARCH64_PRESET` 与 `NANOAI_NCNN_ANDROID_PRESET` 互斥，不能同时开启。
-- 当任一预设开启且未手动指定 `CMAKE_TOOLCHAIN_FILE` 时，会自动注入对应 toolchain。
+Common third-party dependency settings:
 
-第三方依赖开关（位于 `cmake/NanoAINCNNThirdParty.cmake`）：
-
-- `NANOAI_NCNN_WITH_NCNN`
-- `NANOAI_NCNN_WITH_OPENCV`
 - `NANOAI_NCNN_NCNN_INCLUDE_DIR`
 - `NANOAI_NCNN_NCNN_LIBRARY_DIR`
 - `NANOAI_NCNN_NCNN_LIBRARY`
 - `NANOAI_NCNN_OPENCV_DIR`
 
-## 快速命令
+## Quick Start
 
-### 1. 构建并安装第三方包
+### 1. Build and install the package
 
-先确保能找到 NanoAIFlow（任选一种）：
+Make sure NanoAIFlow can be found by one of the following:
 
 - `-DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install`
 - `-DCMAKE_PREFIX_PATH=/path/to/NanoAIFlow/install`
@@ -79,7 +85,7 @@ cmake --build build_pkg -j
 cmake --install build_pkg
 ```
 
-### 2. 构建 projects 中指定子项目
+### 2. Build a selected project
 
 ```bash
 cmake -S . -B build_proj \
@@ -90,7 +96,7 @@ cmake -S . -B build_proj \
 cmake --build build_proj -j
 ```
 
-### 3. Linux aarch64 交叉编译（与 RKNN 风格对齐）
+### 3. Linux aarch64 cross-compilation
 
 ```bash
 cmake -S . -B build_linux_aarch64 \
@@ -100,7 +106,7 @@ cmake -S . -B build_linux_aarch64 \
 cmake --build build_linux_aarch64 -j
 ```
 
-如需自定义 toolchain：
+To use a custom toolchain:
 
 ```bash
 cmake -S . -B build_linux_aarch64 \
@@ -109,9 +115,7 @@ cmake -S . -B build_linux_aarch64 \
   -DNANOAI_NCNN_BUILD_MODE=PACKAGE
 ```
 
-### 4. Android 交叉编译
-
-说明：Android NDK、NCNN、OpenCV 均改为外部传入，仓库不再默认提供路径。
+### 4. Android cross-compilation
 
 ```bash
 cmake -S . -B build_android \
@@ -128,10 +132,20 @@ cmake -S . -B build_android \
 cmake --build build_android -j
 ```
 
-若不传 `NANOAI_NCNN_ANDROID_NDK_PATH`，会依次读取环境变量 `ANDROID_NDK_HOME` 或 `ANDROID_NDK_ROOT`。
+If `NANOAI_NCNN_ANDROID_NDK_PATH` is not set, the build will try `ANDROID_NDK_HOME` and `ANDROID_NDK_ROOT` from the environment.
 
-你也可以直接使用仓库内提供的脚本 [external_deps_android_build.sh](external_deps_android_build.sh)，修改顶部路径变量后执行。
+You can also use [external_deps_android_build.sh](external_deps_android_build.sh) after adjusting the path variables in the script.
 
-## 许可证
+## Notes
 
-本项目采用 Apache License 2.0，详见 [LICENSE](LICENSE)。
+- `NANOAI_NCNN_LINUX_AARCH64_PRESET` and `NANOAI_NCNN_ANDROID_PRESET` are mutually exclusive
+- When a preset is enabled and `CMAKE_TOOLCHAIN_FILE` is not set manually, the matching toolchain is injected automatically
+
+## Documentation
+
+- [Chinese README](README_zh.md)
+- [Packaging and find_package guide](docs/find_package_and_packaging_guide.md)
+
+## License
+
+This project is licensed under Apache License 2.0. See [LICENSE](LICENSE).
