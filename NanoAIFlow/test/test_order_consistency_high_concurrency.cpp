@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: test_order_consistency_high_concurrency.cpp
+// Brief: 验证高并发争用与严格顺序控制下的结果正确性。
+
 #include <nanoai_flow/nanoai_flow.hpp>
 
 #include <algorithm>
@@ -17,6 +24,7 @@ using namespace NanoAI_FLOW;
 namespace
 {
 
+/// 阶段 1：x -> x + 1。
 class AddPipe : public NanoPipe<AddPipe, 8, PipeExecutionPolicy::shared_pool>
 {
 public:
@@ -26,6 +34,7 @@ public:
     }
 };
 
+/// 阶段 2：x -> x * 2，运行在专用线程池。
 class MulPipe : public NanoPipe<MulPipe, 8, PipeExecutionPolicy::dedicated_pool, 4>
 {
 public:
@@ -35,6 +44,7 @@ public:
     }
 };
 
+/// 阶段 3：x -> x - 3。
 class MinusPipe : public NanoPipe<MinusPipe, 8, PipeExecutionPolicy::shared_pool>
 {
 public:
@@ -44,12 +54,18 @@ public:
     }
 };
 
+/// 高并发输出正确性检查结果。
 struct ConcurrencyCheckResult
 {
+    /// 任务总数。
     int jobs{0};
+    /// 工作线程数。
     int worker_count{0};
+    /// 首个错误索引，-1 表示无错误。
     int mismatch_index{-1};
+    /// 错误位置期望值。
     int expected_at_mismatch{0};
+    /// 错误位置实际值。
     int actual_at_mismatch{0};
 
     bool ok() const
@@ -64,8 +80,9 @@ ConcurrencyCheckResult check_outputs_correct(const std::vector<int> &outputs, in
     result.jobs = static_cast<int>(outputs.size());
     result.worker_count = worker_count;
 
-    for (std::size_t i = 0; i < outputs.size(); ++i)
+    for (nanoai_usize i = 0; i < outputs.size(); ++i)
     {
+        // 流水线变换公式：((x + 1) * 2) - 3 = 2x - 1。
         const int expected = 2 * static_cast<int>(i) - 1;
         if (outputs[i] != expected)
         {
@@ -90,10 +107,10 @@ ConcurrencyCheckResult test_order_consistency_high_concurrency()
     const int worker_count = static_cast<int>(std::max(8u, std::thread::hardware_concurrency()));
 
     std::atomic<int> next{0};
-    std::vector<int> outputs(static_cast<std::size_t>(kJobs), 0);
+    std::vector<int> outputs(static_cast<nanoai_usize>(kJobs), 0);
 
     std::vector<std::thread> workers;
-    workers.reserve(static_cast<std::size_t>(worker_count));
+    workers.reserve(static_cast<nanoai_usize>(worker_count));
 
     for (int i = 0; i < worker_count; ++i)
     {
@@ -105,7 +122,7 @@ ConcurrencyCheckResult test_order_consistency_high_concurrency()
                 {
                     break;
                 }
-                outputs[static_cast<std::size_t>(idx)] = pipeline.run(idx);
+                outputs[static_cast<nanoai_usize>(idx)] = pipeline.run(idx);
             }
         });
     }
@@ -115,16 +132,22 @@ ConcurrencyCheckResult test_order_consistency_high_concurrency()
         w.join();
     }
 
-    // 高并发阶段：关注结果映射一致性。
+    // 高并发阶段：关注“输入 ID -> 输出值”映射正确性，不要求完成顺序单调。
     return check_outputs_correct(outputs, worker_count);
 }
 
+/// 严格控制（单提交线程）场景下的检查结果。
 struct StrictOrderResult
 {
+    /// 任务总数。
     int jobs{0};
+    /// 首个错误索引，-1 表示无错误。
     int mismatch_index{-1};
+    /// 错误位置期望值。
     int expected_at_mismatch{0};
+    /// 错误位置实际值。
     int actual_at_mismatch{0};
+    /// 完成顺序是否单调不降。
     bool monotonic{true};
 
     bool ok() const
@@ -135,7 +158,7 @@ struct StrictOrderResult
 
 StrictOrderResult test_order_consistency_strict_control()
 {
-    // 严格顺序控制阶段：单提交线程下验证完成顺序单调不降。
+    // 严格顺序控制阶段: 单提交线程下验证完成顺序单调不降。
     AddPipe add;
     MulPipe mul;
     MinusPipe minus;
@@ -143,7 +166,7 @@ StrictOrderResult test_order_consistency_strict_control()
 
     constexpr int kJobs = 2000;
     std::vector<int> completion_order;
-    completion_order.reserve(static_cast<std::size_t>(kJobs));
+    completion_order.reserve(static_cast<nanoai_usize>(kJobs));
 
     StrictOrderResult result;
     result.jobs = kJobs;
@@ -161,7 +184,7 @@ StrictOrderResult test_order_consistency_strict_control()
         completion_order.push_back(i);
     }
 
-    for (std::size_t i = 1; i < completion_order.size(); ++i)
+    for (nanoai_usize i = 1; i < completion_order.size(); ++i)
     {
         if (completion_order[i] < completion_order[i - 1])
         {

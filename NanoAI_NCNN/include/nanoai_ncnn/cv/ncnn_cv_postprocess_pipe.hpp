@@ -8,17 +8,17 @@
 #include "nanoai_flow/core/pipe.hpp"
 #include "nanoai_ncnn/core/ncnn_types.hpp"
 
+using NanoAI_FLOW::NanoPipe;
+using NanoAI_FLOW::nanoai_u32;
+using NanoAI_FLOW::PipeExecutionPolicy;
+
 namespace NanoAI_NCNN::CV
 {
-    using NanoAI_FLOW::NanoPipe;
-    using NanoAI_FLOW::PipeCount;
-    using NanoAI_FLOW::PipeExecutionPolicy;
-
     template <
         typename Out = NcnnInferResult,
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     class NcnnCvPostprocessPipe : public NanoPipe<NcnnCvPostprocessPipe<Out, NumThreads, Policy, DedicatedPoolSize>, NumThreads, Policy, DedicatedPoolSize>
     {
     public:
@@ -48,4 +48,16 @@ namespace NanoAI_NCNN::CV
         Callback callback_{};
     };
 
+} // namespace NanoAI_NCNN::CV
+
+namespace NanoAI_NCNN::CV
+{
+    template <
+        typename Out = NcnnInferResult,
+        nanoai_u32 NumThreads = 0,
+        PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
+        nanoai_u32 DedicatedPoolSize = 0>
+    class NcnnCv_Yolo26PostprocessPipe : public NcnnCvPostprocessPipe<NcnnCv_Yolo26PostprocessPipe<Out, NumThreads, Policy, DedicatedPoolSize>, NumThreads, Policy, DedicatedPoolSize>
+    {
+    };
 } // namespace NanoAI_NCNN::CV

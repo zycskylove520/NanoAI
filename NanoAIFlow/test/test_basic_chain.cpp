@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: test_basic_chain.cpp
+// Brief: 验证基础线性流水线算子链路行为。
+
 #include <nanoai_flow/nanoai_flow.hpp>
 
 #include <iostream>
@@ -10,6 +17,7 @@ using namespace NanoAI_FLOW;
 namespace
 {
 
+/// 阶段 1：x -> x + 1。
 class AddOnePipe : public NanoPipe<AddOnePipe>
 {
 public:
@@ -19,6 +27,7 @@ public:
     }
 };
 
+/// 阶段 2：x -> x * 2。
 class DoublePipe : public NanoPipe<DoublePipe>
 {
 public:
@@ -28,10 +37,14 @@ public:
     }
 };
 
+/// 测试结果结构体，用于断言与输出。
 struct BasicChainResult
 {
+    /// 输入值。
     int input{0};
+    /// 期望输出。
     int expected{0};
+    /// 实际输出。
     int actual{0};
 
     bool ok() const
@@ -42,8 +55,7 @@ struct BasicChainResult
 
 BasicChainResult test_basic_chain()
 {
-    // 功能预期：
-    // 5 -> (5 + 1) -> (6 * 2) = 12。
+    // 预期链路: 5 -> AddOnePipe -> DoublePipe = 12。
     AddOnePipe add;
     DoublePipe dbl;
     NanoPipeLine pipeline(4, 16, add, dbl);

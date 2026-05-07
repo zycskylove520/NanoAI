@@ -8,6 +8,8 @@
 #include <ncnn/net.h>
 #include <ncnn/mat.h>
 
+#include "nanoai_flow/core/types.h"
+
 namespace NanoAI_NCNN
 {
     enum class NcnnModelDomain : unsigned char

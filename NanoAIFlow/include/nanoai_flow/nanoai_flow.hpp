@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: nanoai_flow.hpp
+// Brief: NanoAIFlow 对外统一入口头文件。
+
 #pragma once
 
 #include "core/copy.hpp"

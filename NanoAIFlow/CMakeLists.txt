@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) NanoAI
+#
+# File: CMakeLists.txt
+# Brief: NanoAIFlow 头文件库的构建、安装与打包定义。
+
 cmake_minimum_required(VERSION 3.16)
 
 project(NanoAIFlow VERSION 1.0.0 LANGUAGES CXX)
@@ -5,12 +12,14 @@ project(NanoAIFlow VERSION 1.0.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+# 可选开关：测试、示例与打包。
 option(NANOAIFLOW_BUILD_TESTS "Build NanoAIFlow tests" OFF)
 option(NANOAIFLOW_BUILD_EXAMPLES "Build NanoAIFlow examples" OFF)
 option(NANOAIFLOW_ENABLE_CPACK "Enable CPack package generation" OFF)
 
 find_package(Threads REQUIRED)
 
+# 头文件库目标与命名空间别名目标。
 add_library(NanoAIFlow INTERFACE)
 add_library(NanoAI::Flow ALIAS NanoAIFlow)
 
@@ -23,6 +32,7 @@ target_include_directories(NanoAIFlow
 )
 target_link_libraries(NanoAIFlow INTERFACE Threads::Threads)
 
+# 安装 CMake 包配置文件目录。
 set(NANOAIFLOW_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/NanoAIFlow" CACHE STRING "Install path for NanoAIFlow CMake package files")
 
 install(TARGETS NanoAIFlow
@@ -70,12 +80,14 @@ if(NANOAIFLOW_ENABLE_CPACK)
 endif()
 
 if(NANOAIFLOW_BUILD_EXAMPLES)
+    # 单文件性能示例程序。
     add_executable(nanoaiflow_benchmark examples/perf_benchmark.cpp)
     target_link_libraries(nanoaiflow_benchmark PRIVATE NanoAIFlow)
 endif()
 
 if(NANOAIFLOW_BUILD_TESTS)
     enable_testing()
+    # 功能正确性测试目标。
     add_executable(nanoaiflow_test_basic_chain test/test_basic_chain.cpp)
     target_link_libraries(nanoaiflow_test_basic_chain PRIVATE NanoAIFlow)
     add_test(NAME NanoAIFlow.BasicChain COMMAND nanoaiflow_test_basic_chain)

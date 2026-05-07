@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: test_pointer.cpp
+// Brief: 验证指针输入在流水线中的传递与值变换。
+
 #include <nanoai_flow/nanoai_flow.hpp>
 
 #include <iostream>
@@ -9,6 +16,7 @@ using namespace NanoAI_FLOW;
 namespace
 {
 
+/// 阶段 1：读取整型指针并处理空指针分支。
 class ReadPointerPipe : public NanoPipe<ReadPointerPipe>
 {
 public:
@@ -22,6 +30,7 @@ public:
     }
 };
 
+/// 阶段 2：乘法变换阶段，用于确定性校验。
 class MultiplyPipe : public NanoPipe<MultiplyPipe>
 {
 public:
@@ -31,10 +40,14 @@ public:
     }
 };
 
+/// 测试结果结构体，用于断言与输出。
 struct PointerResult
 {
+    /// 输入原值。
     int input{0};
+    /// 期望输出。
     int expected{0};
+    /// 实际输出。
     int actual{0};
 
     bool ok() const
@@ -45,8 +58,7 @@ struct PointerResult
 
 PointerResult test_pointer_input()
 {
-    // 功能预期：
-    // 输入指针指向 7 -> 读取后 +1 = 8 -> *3 = 24。
+    // 预期链路: (&7) -> 8 -> 24。
     ReadPointerPipe read;
     MultiplyPipe mul;
     NanoPipeLine pipeline(4, 16, read, mul);

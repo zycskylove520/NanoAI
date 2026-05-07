@@ -4,9 +4,11 @@
 #include <string>
 #include <vector>
 
+#include "nanoai_flow/core/types.h"
+
 namespace NanoAI_NCNN::Projects::CarProject
 {
-    enum class CarType : std::uint8_t
+    enum class CarType : NanoAI_FLOW::nanoai_u8
     {
         car = 0,
         bus = 1,

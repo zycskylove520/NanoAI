@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: test_tuple_forwarding.cpp
+// Brief: 验证相邻阶段间 tuple 输出展开转发能力。
+
 #include <nanoai_flow/nanoai_flow.hpp>
 
 #include <iostream>
@@ -11,6 +18,7 @@ using namespace NanoAI_FLOW;
 namespace
 {
 
+/// 阶段 1：把标量转换为二元组。
 class TuplePackPipe : public NanoPipe<TuplePackPipe>
 {
 public:
@@ -20,6 +28,7 @@ public:
     }
 };
 
+/// 阶段 2：消费 tuple 展开后的参数。
 class TupleConsumePipe : public NanoPipe<TupleConsumePipe>
 {
 public:
@@ -29,10 +38,14 @@ public:
     }
 };
 
+/// 测试结果结构体，用于断言与输出。
 struct TupleForwardingResult
 {
+    /// 输入值。
     int input{0};
+    /// 期望输出。
     int expected{0};
+    /// 实际输出。
     int actual{0};
 
     bool ok() const
@@ -43,9 +56,7 @@ struct TupleForwardingResult
 
 TupleForwardingResult test_tuple_forwarding()
 {
-    // 功能预期：
-    // 输入 3 -> TuplePackPipe 返回 (3, 13)
-    // -> TupleConsumePipe 计算 3 + 13 = 16。
+    // 预期链路: 3 -> (3, 13) -> 16。
     auto pipeline = make_pipeline_builder(4, 16)
                         .add_pipe(TuplePackPipe{})
                         .add_pipe(TupleConsumePipe{})

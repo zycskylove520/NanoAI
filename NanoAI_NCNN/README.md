@@ -37,8 +37,7 @@ NanoAI_NCNN 支持两种互斥构建模式：
 - `NANOAI_NCNN_BUILD_MODE`：`PACKAGE` 或 `PROJECTS`，默认 `PACKAGE`
 - `NANOAI_NCNN_PROJECTS`：仅在 `PROJECTS` 模式生效，默认 `ALL`
 - `NANOAI_NCNN_INSTALL_CMAKEDIR`：包配置文件安装目录，默认 `lib/cmake/NanoAI_NCNN`
-- `NANOAIFLOW_ROOT_HOST`：Host 侧 NanoAIFlow 安装前缀
-- `NANOAIFLOW_ROOT_ANDROID`：Android 侧 NanoAIFlow 安装前缀
+- `NANOAIFLOW_ROOT`：NanoAIFlow 安装前缀（平台无关）
 
 预设开关：
 
@@ -66,14 +65,14 @@ NanoAI_NCNN 支持两种互斥构建模式：
 
 先确保能找到 NanoAIFlow（任选一种）：
 
-- `-DNANOAIFLOW_ROOT_HOST=/path/to/NanoAIFlow/install`
+- `-DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install`
 - `-DCMAKE_PREFIX_PATH=/path/to/NanoAIFlow/install`
 - `-DNanoAIFlow_DIR=/path/to/NanoAIFlow/install/lib/cmake/NanoAIFlow`
 
 ```bash
 cmake -S . -B build_pkg \
   -DNANOAI_NCNN_BUILD_MODE=PACKAGE \
-  -DNANOAIFLOW_ROOT_HOST=/path/to/NanoAIFlow/install \
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
   -DCMAKE_INSTALL_PREFIX=/your/install/prefix
 
 cmake --build build_pkg -j
@@ -85,7 +84,7 @@ cmake --install build_pkg
 ```bash
 cmake -S . -B build_proj \
   -DNANOAI_NCNN_BUILD_MODE=PROJECTS \
-  -DNANOAIFLOW_ROOT_HOST=/path/to/NanoAIFlow/install \
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
   -DNANOAI_NCNN_PROJECTS=car_project
 
 cmake --build build_proj -j

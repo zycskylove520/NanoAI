@@ -11,14 +11,14 @@
 namespace NanoAI_RKNN::CV
 {
     using NanoAI_FLOW::NanoPipe;
-    using NanoAI_FLOW::PipeCount;
+    using NanoAI_FLOW::nanoai_u32;
     using NanoAI_FLOW::PipeExecutionPolicy;
 
     template <
         RknnMemoryMode Mode,
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     class RknnLoadPipe : public NanoPipe<RknnLoadPipe<Mode, NumThreads, Policy, DedicatedPoolSize>, NumThreads, Policy, DedicatedPoolSize>
     {
     public:
@@ -77,15 +77,15 @@ namespace NanoAI_RKNN::CV
     };
 
     template <
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     using RknnHostLoadPipe = RknnLoadPipe<RknnMemoryMode::host, NumThreads, Policy, DedicatedPoolSize>;
 
     template <
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     using RknnZeroCopyLoadPipe = RknnLoadPipe<RknnMemoryMode::zero_copy, NumThreads, Policy, DedicatedPoolSize>;
 
     using RknnAfterZeroCopyLoadCallback = RknnAfterLoadCallback;

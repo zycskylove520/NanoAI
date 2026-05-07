@@ -12,7 +12,7 @@
 namespace NanoAI_NCNN::CV
 {
     using NanoAI_FLOW::NanoPipe;
-    using NanoAI_FLOW::PipeCount;
+    using NanoAI_FLOW::nanoai_u32;
     using NanoAI_FLOW::PipeExecutionPolicy;
 
     inline void ncnn_letter_box(const cv::Mat &src, cv::Mat &dst, int target_width, int target_height, NcnnCvMeta &meta)
@@ -53,9 +53,9 @@ namespace NanoAI_NCNN::CV
     template <
         int InputWidth = 960,
         int InputHeight = 960,
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     class NcnnCvRgbPreprocessPipe : public NanoPipe<NcnnCvRgbPreprocessPipe<InputWidth, InputHeight, NumThreads, Policy, DedicatedPoolSize>, NumThreads, Policy, DedicatedPoolSize>
     {
     public:

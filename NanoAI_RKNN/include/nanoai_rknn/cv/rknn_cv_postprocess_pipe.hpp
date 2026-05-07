@@ -12,14 +12,14 @@
 namespace NanoAI_RKNN::CV
 {
     using NanoAI_FLOW::NanoPipe;
-    using NanoAI_FLOW::PipeCount;
+    using NanoAI_FLOW::nanoai_u32;
     using NanoAI_FLOW::PipeExecutionPolicy;
 
     template <
         typename Out = RknnInferResult,
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     class RknnPostprocessPipe : public NanoPipe<RknnPostprocessPipe<Out, NumThreads, Policy, DedicatedPoolSize>, NumThreads, Policy, DedicatedPoolSize>
     {
     public:
@@ -57,16 +57,16 @@ namespace NanoAI_RKNN::CV
 
     template <
         typename Out = RknnInferResult,
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     using RknnHostPostprocessPipe = RknnPostprocessPipe<Out, NumThreads, Policy, DedicatedPoolSize>;
 
     template <
         typename Out = RknnInferResult,
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     using RknnZeroCopyPostprocessPipe = RknnPostprocessPipe<Out, NumThreads, Policy, DedicatedPoolSize>;
 
 } // namespace NanoAI_RKNN

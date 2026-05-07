@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: perf_benchmark.cpp
+// Brief: 高并发性能基准，比较 shared/dedicated/mixed 三种执行策略。
+
 #include "../include/nanoai_flow/core/pipeline.hpp"
 
 #include <algorithm>
@@ -14,6 +21,7 @@
 
 using namespace NanoAI_FLOW;
 
+/// 确定性 CPU 密集核函数，用于模拟计算型推理阶段。
 inline int cpu_spin_mix(int x)
 {
     int acc = x;
@@ -24,12 +32,20 @@ inline int cpu_spin_mix(int x)
     return acc;
 }
 
-template <PipeExecutionPolicy Policy, PipeCount Concurrency = 8, PipeCount DedicatedSize = 0>
+/**
+ * @brief 计算阶段示例。
+ * @tparam Policy 阶段执行策略。
+ * @tparam Concurrency 阶段并发度。
+ * @tparam DedicatedSize 专用线程池大小（仅 dedicated_pool 生效）。
+ */
+template <PipeExecutionPolicy Policy, nanoai_u32 Concurrency = 8, nanoai_u32 DedicatedSize = 0>
 class ComputePipe final : public NanoPipe<ComputePipe<Policy, Concurrency, DedicatedSize>, Concurrency, Policy, DedicatedSize>
 {
 public:
+    /// @param bias 阶段输出偏置，用于区分不同阶段。
     explicit ComputePipe(int bias) noexcept : bias_(bias) {}
 
+    /// 模拟单个计算阶段。
     int on_run(int input)
     {
         const int mixed = cpu_spin_mix(input);
@@ -37,22 +53,37 @@ public:
     }
 
 private:
+    /// 当前阶段的输出偏置。
     int bias_;
 };
 
+/// 单个策略用例的聚合指标。
 struct BenchResult
 {
+    /// 用例名称。
     std::string name;
+    /// 总任务数。
     int jobs{0};
+    /// 提交线程数。
     int submit_threads{0};
+    /// 总耗时（毫秒）。
     double time_ms{0.0};
+    /// 吞吐（每秒请求数）。
     double qps{0.0};
-    std::uint64_t checksum{0};
+    /// 输出校验和，用于快速一致性观察。
+    nanoai_u64 checksum{0};
+    /// 输出值正确性标记。
     bool output_ok{false};
+    /// 完成顺序是否单调。
     bool completion_order_monotonic{false};
+    /// 完成顺序破坏次数。
     int completion_order_breaks{0};
 };
 
+/**
+ * @brief 运行单个高并发基准用例。
+ * @tparam PipelineFactory 可调用对象类型，返回已构建的流水线实例。
+ */
 template <typename PipelineFactory>
 BenchResult run_high_concurrency_benchmark(
     const std::string &name,
@@ -60,22 +91,24 @@ BenchResult run_high_concurrency_benchmark(
     int submit_threads,
     PipelineFactory make_pipeline)
 {
+    // 为当前用例构建一条强类型流水线实例。
     auto pipeline = make_pipeline();
 
-    std::vector<int> outputs(static_cast<std::size_t>(jobs), 0);
+    std::vector<int> outputs(static_cast<nanoai_usize>(jobs), 0);
     std::vector<int> completion_order;
-    completion_order.reserve(static_cast<std::size_t>(jobs));
+    completion_order.reserve(static_cast<nanoai_usize>(jobs));
     std::mutex completion_mtx;
 
     std::atomic<int> next{0};
-    std::atomic<std::uint64_t> checksum{0};
+    std::atomic<nanoai_u64> checksum{0};
 
     const auto begin = std::chrono::steady_clock::now();
 
     std::vector<std::thread> workers;
-    workers.reserve(static_cast<std::size_t>(submit_threads));
+    workers.reserve(static_cast<nanoai_usize>(submit_threads));
     for (int t = 0; t < submit_threads; ++t)
     {
+        // 通过原子索引分发任务，近似 work-stealing 提交模式。
         workers.emplace_back([&]() {
             for (;;)
             {
@@ -86,8 +119,8 @@ BenchResult run_high_concurrency_benchmark(
                 }
 
                 const int out = pipeline.run(idx);
-                outputs[static_cast<std::size_t>(idx)] = out;
-                checksum.fetch_add(static_cast<std::uint64_t>(out), std::memory_order_relaxed);
+                outputs[static_cast<nanoai_usize>(idx)] = out;
+                checksum.fetch_add(static_cast<nanoai_u64>(out), std::memory_order_relaxed);
 
                 {
                     std::lock_guard lock(completion_mtx);
@@ -109,8 +142,9 @@ BenchResult run_high_concurrency_benchmark(
     bool output_ok = true;
     for (int i = 0; i < jobs; ++i)
     {
+        // 三阶段组合公式对应的真值计算。
         const int expected = cpu_spin_mix(cpu_spin_mix(cpu_spin_mix(i) + 3) + 5) + 7;
-        if (outputs[static_cast<std::size_t>(i)] != expected)
+        if (outputs[static_cast<nanoai_usize>(i)] != expected)
         {
             output_ok = false;
             break;
@@ -118,7 +152,7 @@ BenchResult run_high_concurrency_benchmark(
     }
 
     int breaks = 0;
-    for (std::size_t i = 1; i < completion_order.size(); ++i)
+    for (nanoai_usize i = 1; i < completion_order.size(); ++i)
     {
         if (completion_order[i] < completion_order[i - 1])
         {
@@ -139,6 +173,7 @@ BenchResult run_high_concurrency_benchmark(
     return result;
 }
 
+/// 打印单个用例结果。
 void print_bench_result(const BenchResult &result)
 {
     std::cout << "[PERF] " << result.name
@@ -159,6 +194,7 @@ void print_bench_result(const BenchResult &result)
 
 int main()
 {
+    // 基准测试分为两段：高压吞吐阶段 + 严格顺序对照阶段。
     const int jobs = 20000;
     const int submit_threads = static_cast<int>(std::max(4u, std::thread::hardware_concurrency()));
     const int strict_order_jobs = 8000;

@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: example.cpp
+// Brief: 固定管线构造与 Builder 链式构造的最小示例。
+
 #include "core/pipeline.hpp"
 
 #include <iostream>
@@ -6,6 +13,7 @@
 
 using namespace NanoAI_FLOW;
 
+/// 阶段 1：输入加一。
 class AddOnePipe final : public NanoPipe<AddOnePipe>
 {
 public:
@@ -15,6 +23,7 @@ public:
     }
 };
 
+/// 阶段 2：把标量拆分为二元组，供下一阶段按参数展开消费。
 class ToPairPipe final : public NanoPipe<ToPairPipe>
 {
 public:
@@ -24,6 +33,7 @@ public:
     }
 };
 
+/// 阶段 3：消费展开后的参数并拼接字符串结果。
 class JoinPipe final : public NanoPipe<JoinPipe>
 {
 public:
@@ -33,6 +43,10 @@ public:
     }
 };
 
+/**
+ * @brief 带策略模板参数的示例阶段。
+ * @tparam Policy 阶段执行策略。
+ */
 template <PipeExecutionPolicy Policy>
 class PolicyPipe final : public NanoPipe<PolicyPipe<Policy>, 4, Policy>
 {

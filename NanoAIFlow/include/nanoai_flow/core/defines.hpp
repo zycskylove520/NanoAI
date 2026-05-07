@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: defines.hpp
+// Brief: 常用编译期工具与参数访问辅助函数。
+
 #pragma once
 
 #include <tuple>
@@ -7,8 +14,12 @@
 namespace NanoAI_FLOW
 {
 
-#define NANOAI_DEBUG 1 ///< Enable debug output and timing. 1=on, 0=off.
+/// 调试开关：1 开启调试输出与计时，0 关闭。
+#define NANOAI_DEBUG 1
 
+/**
+ * @brief 从转发参数包中按编译期索引提取参数。
+ */
 template <int Index, typename... Args>
 decltype(auto) get_args_element(Args &&...args)
 {
@@ -16,6 +27,9 @@ decltype(auto) get_args_element(Args &&...args)
         std::forward_as_tuple(std::forward<Args>(args)...));
 }
 
+/**
+ * @brief get_args_element 的编译期类型检查辅助。
+ */
 struct check_element_type
 {
     template <typename T, int Index, typename... Args>

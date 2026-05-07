@@ -10,13 +10,13 @@
 namespace NanoAI_NCNN::CV
 {
     using NanoAI_FLOW::NanoPipe;
-    using NanoAI_FLOW::PipeCount;
+    using NanoAI_FLOW::nanoai_u32;
     using NanoAI_FLOW::PipeExecutionPolicy;
 
     template <
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     class NcnnCvInferPipe : public NanoPipe<NcnnCvInferPipe<NumThreads, Policy, DedicatedPoolSize>, NumThreads, Policy, DedicatedPoolSize>
     {
     public:

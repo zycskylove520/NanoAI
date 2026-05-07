@@ -13,7 +13,7 @@
 namespace NanoAI_RKNN::CV
 {
     using NanoAI_FLOW::NanoPipe;
-    using NanoAI_FLOW::PipeCount;
+    using NanoAI_FLOW::nanoai_u32;
     using NanoAI_FLOW::PipeExecutionPolicy;
 
     namespace details
@@ -33,7 +33,7 @@ namespace NanoAI_RKNN::CV
             RknnHostTensor tensor;
             tensor.index = packet.input_index;
             tensor.precision = RknnTensorPrecision::float16;
-            tensor.bytes.resize(packet.fp16_input.size() * sizeof(std::uint16_t));
+            tensor.bytes.resize(packet.fp16_input.size() * sizeof(NanoAI_FLOW::nanoai_u16));
             std::memcpy(tensor.bytes.data(), packet.fp16_input.data(), tensor.bytes.size());
             return {std::move(tensor)};
         }
@@ -49,9 +49,9 @@ namespace NanoAI_RKNN::CV
 
     template <
         RknnMemoryMode Mode,
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     class RknnInferPipe : public NanoPipe<RknnInferPipe<Mode, NumThreads, Policy, DedicatedPoolSize>, NumThreads, Policy, DedicatedPoolSize>
     {
     public:
@@ -81,7 +81,7 @@ namespace NanoAI_RKNN::CV
 
                 std::vector<rknn_input> rknn_inputs(input_tensors.size());
                 std::memset(rknn_inputs.data(), 0, rknn_inputs.size() * sizeof(rknn_input));
-                for (std::size_t i = 0; i < input_tensors.size(); ++i)
+                for (NanoAI_FLOW::nanoai_usize i = 0; i < input_tensors.size(); ++i)
                 {
                     const auto &tensor = input_tensors[i];
                     if (tensor.index < 0 || tensor.index >= ctx.io_num_.n_input)
@@ -92,11 +92,11 @@ namespace NanoAI_RKNN::CV
                     rknn_inputs[i].index = tensor.index;
                     rknn_inputs[i].type = rknn_to_tensor_type(tensor.precision);
                     rknn_inputs[i].fmt = ctx.input_attrs_[tensor.index].fmt;
-                    rknn_inputs[i].buf = const_cast<std::uint8_t *>(tensor.bytes.data());
+                    rknn_inputs[i].buf = const_cast<NanoAI_FLOW::nanoai_u8 *>(tensor.bytes.data());
                     rknn_inputs[i].size = tensor.bytes.size();
                 }
 
-                int ret = rknn_inputs_set(ctx.ctx_, static_cast<std::uint32_t>(rknn_inputs.size()), rknn_inputs.data());
+                int ret = rknn_inputs_set(ctx.ctx_, static_cast<NanoAI_FLOW::nanoai_u32>(rknn_inputs.size()), rknn_inputs.data());
                 if (ret < 0)
                 {
                     throw std::runtime_error("RknnInferPipe::on_run: rknn_inputs_set failed, ret=" + std::to_string(ret));
@@ -115,12 +115,12 @@ namespace NanoAI_RKNN::CV
             }
 
             const int out_count = ctx.io_num_.n_output;
-            std::vector<rknn_output> outputs(static_cast<std::size_t>(out_count));
+            std::vector<rknn_output> outputs(static_cast<NanoAI_FLOW::nanoai_usize>(out_count));
             std::memset(outputs.data(), 0, outputs.size() * sizeof(rknn_output));
             for (int i = 0; i < out_count; ++i)
             {
-                outputs[static_cast<std::size_t>(i)].index = i;
-                outputs[static_cast<std::size_t>(i)].want_float = 1;
+                outputs[static_cast<NanoAI_FLOW::nanoai_usize>(i)].index = i;
+                outputs[static_cast<NanoAI_FLOW::nanoai_usize>(i)].want_float = 1;
             }
 
             ret = rknn_outputs_get(ctx.ctx_, out_count, outputs.data(), nullptr);
@@ -136,8 +136,8 @@ namespace NanoAI_RKNN::CV
                 tensor.index = i;
                 tensor.precision = RknnTensorPrecision::float32;
                 tensor.shape.assign(attr.dims, attr.dims + attr.n_dims);
-                tensor.data.resize(static_cast<std::size_t>(attr.n_elems));
-                const auto *src = static_cast<const float *>(outputs[static_cast<std::size_t>(i)].buf);
+                tensor.data.resize(static_cast<NanoAI_FLOW::nanoai_usize>(attr.n_elems));
+                const auto *src = static_cast<const float *>(outputs[static_cast<NanoAI_FLOW::nanoai_usize>(i)].buf);
                 std::copy(src, src + attr.n_elems, tensor.data.begin());
                 result.outputs.emplace_back(std::move(tensor));
             }
@@ -148,15 +148,15 @@ namespace NanoAI_RKNN::CV
     };
 
     template <
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     using RknnHostInferPipe = RknnInferPipe<RknnMemoryMode::host, NumThreads, Policy, DedicatedPoolSize>;
 
     template <
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     using RknnZeroCopyInferPipe = RknnInferPipe<RknnMemoryMode::zero_copy, NumThreads, Policy, DedicatedPoolSize>;
 
 } // namespace NanoAI_RKNN

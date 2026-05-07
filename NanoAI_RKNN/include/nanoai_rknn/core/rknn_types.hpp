@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "nanoai_flow/core/types.h"
 #include "nanoai_rknn/core/rknn_helper.hpp"
 
 namespace NanoAI_RKNN
@@ -61,7 +62,7 @@ namespace NanoAI_RKNN
         int index{0};
         RknnTensorPrecision precision{RknnTensorPrecision::float16};
         std::vector<int> shape{};
-        std::vector<std::uint8_t> bytes{};
+        std::vector<NanoAI_FLOW::nanoai_u8> bytes{};
     };
 
     struct RknnHostInputPacket
@@ -70,7 +71,7 @@ namespace NanoAI_RKNN
         std::vector<RknnHostTensor> tensors{};
 
         // 兼容旧调用路径: 单输入 FP16。
-        std::vector<std::uint16_t> fp16_input{};
+        std::vector<NanoAI_FLOW::nanoai_u16> fp16_input{};
         int input_index{0};
         std::any user_data{};
     };

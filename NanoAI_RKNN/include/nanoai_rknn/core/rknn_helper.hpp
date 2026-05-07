@@ -7,6 +7,7 @@
 #include <rknn_api.h>
 #include <dma_alloc.h>
 #include "file_utils.h"
+#include "nanoai_flow/core/types.h"
 
 namespace NanoAI_RKNN::Helper
 {
@@ -36,7 +37,7 @@ namespace NanoAI_RKNN::Helper
     struct RKNNDMAContext
     {
         int dma_fd_ = 0;             // DMA 缓冲区文件描述符
-        uint8_t *dma_buf_ = nullptr; // DMA 缓冲区虚拟地址指针
+        NanoAI_FLOW::nanoai_u8 *dma_buf_ = nullptr; // DMA 缓冲区虚拟地址指针
         int dma_buf_size_ = 0;       // DMA 缓冲区总大小
     };
 

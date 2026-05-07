@@ -15,14 +15,14 @@
 namespace NanoAI_RKNN::CV
 {
     using NanoAI_FLOW::NanoPipe;
-    using NanoAI_FLOW::PipeCount;
+    using NanoAI_FLOW::nanoai_u32;
     using NanoAI_FLOW::PipeExecutionPolicy;
 
     template <
         RknnTensorPrecision OutputPrecision = RknnTensorPrecision::float16,
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     class RknnCvRgbPreprocessPipe : public NanoPipe<RknnCvRgbPreprocessPipe<OutputPrecision, NumThreads, Policy, DedicatedPoolSize>, NumThreads, Policy, DedicatedPoolSize>
     {
     public:
@@ -62,32 +62,32 @@ namespace NanoAI_RKNN::CV
 
             if constexpr (OutputPrecision == RknnTensorPrecision::float16)
             {
-                host_packet.fp16_input.resize(static_cast<std::size_t>(total));
+                host_packet.fp16_input.resize(static_cast<NanoAI_FLOW::nanoai_usize>(total));
                 for (int i = 0; i < total; ++i)
                 {
                     rknpu2::float16 f16(static_cast<float>(packet.data[i]));
-                    host_packet.fp16_input[static_cast<std::size_t>(i)] = f16.bits();
+                    host_packet.fp16_input[static_cast<NanoAI_FLOW::nanoai_usize>(i)] = f16.bits();
                 }
 
-                tensor.bytes.resize(host_packet.fp16_input.size() * sizeof(std::uint16_t));
+                tensor.bytes.resize(host_packet.fp16_input.size() * sizeof(NanoAI_FLOW::nanoai_u16));
                 std::memcpy(tensor.bytes.data(), host_packet.fp16_input.data(), tensor.bytes.size());
             }
             else if constexpr (OutputPrecision == RknnTensorPrecision::float32)
             {
-                std::vector<float> fp32(static_cast<std::size_t>(total));
+                std::vector<float> fp32(static_cast<NanoAI_FLOW::nanoai_usize>(total));
                 for (int i = 0; i < total; ++i)
                 {
-                    fp32[static_cast<std::size_t>(i)] = static_cast<float>(packet.data[i]);
+                    fp32[static_cast<NanoAI_FLOW::nanoai_usize>(i)] = static_cast<float>(packet.data[i]);
                 }
                 tensor.bytes.resize(fp32.size() * sizeof(float));
                 std::memcpy(tensor.bytes.data(), fp32.data(), tensor.bytes.size());
             }
             else if constexpr (OutputPrecision == RknnTensorPrecision::int8)
             {
-                tensor.bytes.resize(static_cast<std::size_t>(total));
+                tensor.bytes.resize(static_cast<NanoAI_FLOW::nanoai_usize>(total));
                 for (int i = 0; i < total; ++i)
                 {
-                    tensor.bytes[static_cast<std::size_t>(i)] = static_cast<std::uint8_t>(packet.data[i]);
+                    tensor.bytes[static_cast<NanoAI_FLOW::nanoai_usize>(i)] = static_cast<NanoAI_FLOW::nanoai_u8>(packet.data[i]);
                 }
             }
             else
@@ -101,15 +101,15 @@ namespace NanoAI_RKNN::CV
     };
 
     template <
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     using RknnHostRgbToFp16Pipe = RknnCvRgbPreprocessPipe<RknnTensorPrecision::float16, NumThreads, Policy, DedicatedPoolSize>;
 
     template <
-        PipeCount NumThreads = 0,
+        nanoai_u32 NumThreads = 0,
         PipeExecutionPolicy Policy = PipeExecutionPolicy::shared_pool,
-        PipeCount DedicatedPoolSize = 0>
+        nanoai_u32 DedicatedPoolSize = 0>
     using RknnHostRgbToFp16PreprocessPipe = RknnHostRgbToFp16Pipe<NumThreads, Policy, DedicatedPoolSize>;
 
 } // namespace NanoAI_RKNN

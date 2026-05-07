@@ -22,8 +22,7 @@
 
 - `NANOAI_NCNN_BUILD_MODE`：`PACKAGE` / `PROJECTS`
 - `NANOAI_NCNN_PROJECTS`：`ALL` / `NONE` / `projA;projB`（仅 `PROJECTS` 模式有效）
-- `NANOAIFLOW_ROOT_HOST`：Host 侧 NanoAIFlow 安装前缀（可选）
-- `NANOAIFLOW_ROOT_ANDROID`：Android 侧 NanoAIFlow 安装前缀（可选）
+- `NANOAIFLOW_ROOT`：NanoAIFlow 安装前缀（平台无关，可选）
 - `NANOAI_NCNN_INSTALL_CMAKEDIR`：安装时导出 CMake 配置文件目录
 
 ### 2.2 交叉编译预设
@@ -57,14 +56,14 @@
 
 先准备 NanoAIFlow 依赖（任选一种）：
 
-- 通过 `-DNANOAIFLOW_ROOT_HOST=/path/to/NanoAIFlow/install`
+- 通过 `-DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install`
 - 或通过 `-DCMAKE_PREFIX_PATH=/path/to/NanoAIFlow/install`
 - 或通过 `-DNanoAIFlow_DIR=/path/to/NanoAIFlow/install/lib/cmake/NanoAIFlow`
 
 ```bash
 cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_pkg \
   -DNANOAI_NCNN_BUILD_MODE=PACKAGE \
-  -DNANOAIFLOW_ROOT_HOST=/path/to/NanoAIFlow/install \
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
   -DCMAKE_INSTALL_PREFIX=/your/install/prefix
 
 cmake --build NanoAI_NCNN/build_pkg -j
@@ -113,7 +112,7 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=/your/install/prefix
 ```bash
 cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_proj \
   -DNANOAI_NCNN_BUILD_MODE=PROJECTS \
-  -DNANOAIFLOW_ROOT_HOST=/path/to/NanoAIFlow/install \
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
   -DNANOAI_NCNN_PROJECTS=car_project
 
 cmake --build NanoAI_NCNN/build_proj -j
@@ -162,7 +161,7 @@ cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_android \
   -DNANOAI_NCNN_ANDROID_ABI=arm64-v8a \
   -DNANOAI_NCNN_ANDROID_PLATFORM=android-26 \
   -DNANOAI_NCNN_BUILD_MODE=PROJECTS \
-  -DNANOAIFLOW_ROOT_ANDROID=/path/to/NanoAIFlow/install \
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
   -DNANOAI_NCNN_PROJECTS=car_project
 
 cmake --build NanoAI_NCNN/build_android -j
@@ -188,7 +187,7 @@ cmake --build NanoAI_NCNN/build_android -j
 
 如果遇到头文件或链接符号缺失，请优先检查：
 
-1. `NANOAIFLOW_ROOT_HOST` 或 `NANOAIFLOW_ROOT_ANDROID` 是否指向正确安装目录。
+1. `NANOAIFLOW_ROOT` 是否指向正确安装目录。
   也可直接传 `CMAKE_PREFIX_PATH` 或 `NanoAIFlow_DIR`。
 2. `NANOAI_NCNN_NCNN_INCLUDE_DIR` 与 `NANOAI_NCNN_NCNN_LIBRARY_DIR` 是否正确。
 3. `NANOAI_NCNN_OPENCV_DIR` 是否可被 `find_package(OpenCV)` 识别。

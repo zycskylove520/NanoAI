@@ -9,7 +9,7 @@
 namespace NanoAI_NCNN
 {
     using NanoAI_FLOW::NanoPipeLine;
-    using NanoAI_FLOW::PipeCount;
+    using NanoAI_FLOW::nanoai_u32;
 
     template <typename... Pipes>
     class NcnnPipeLine : public NanoPipeLine<Pipes...>
@@ -17,8 +17,8 @@ namespace NanoAI_NCNN
     public:
         explicit NcnnPipeLine(
             std::string name,
-            PipeCount shared_pool_size = 0,
-            PipeCount global_task_quota = 0,
+            nanoai_u32 shared_pool_size = 0,
+            nanoai_u32 global_task_quota = 0,
             Pipes... pipes)
             : NanoPipeLine<Pipes...>(shared_pool_size, global_task_quota, std::forward<Pipes>(pipes)...),
               name_(std::move(name))
@@ -40,6 +40,6 @@ namespace NanoAI_NCNN
     };
 
     template <typename... Pipes>
-    NcnnPipeLine(std::string, PipeCount, PipeCount, Pipes...) -> NcnnPipeLine<std::decay_t<Pipes>...>;
+    NcnnPipeLine(std::string, nanoai_u32, nanoai_u32, Pipes...) -> NcnnPipeLine<std::decay_t<Pipes>...>;
 
 } // namespace NanoAI_NCNN

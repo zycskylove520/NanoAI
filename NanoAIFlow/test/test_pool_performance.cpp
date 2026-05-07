@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: test_pool_performance.cpp
+// Brief: 比较不同执行策略下流水线性能与正确性。
+
 #include <nanoai_flow/nanoai_flow.hpp>
 
 #include <algorithm>
@@ -20,6 +27,7 @@ using namespace NanoAI_FLOW;
 namespace
 {
 
+/// 确定性 CPU 密集核函数，便于不同策略间可比性测试。
 inline int cpu_spin_mix(int x)
 {
     int acc = x;
@@ -30,7 +38,7 @@ inline int cpu_spin_mix(int x)
     return acc;
 }
 
-template <PipeExecutionPolicy Policy, PipeCount Concurrency = 8, PipeCount DedicatedSize = 0>
+template <PipeExecutionPolicy Policy, nanoai_u32 Concurrency = 8, nanoai_u32 DedicatedSize = 0>
 class ComputePipe final : public NanoPipe<ComputePipe<Policy, Concurrency, DedicatedSize>, Concurrency, Policy, DedicatedSize>
 {
 public:
@@ -44,33 +52,43 @@ public:
     }
 
 private:
+    /// 阶段偏置，用于构造非平凡多阶段组合结果。
     int bias_;
 };
 
+/// 单个性能用例汇总结果。
 struct PerfResult
 {
+    /// 用例名称。
     std::string name;
+    /// 任务总数。
     int jobs{0};
+    /// 提交线程数。
     int submit_threads{0};
+    /// 总耗时（毫秒）。
     double time_ms{0.0};
+    /// 吞吐（每秒请求数）。
     double qps{0.0};
-    std::uint64_t checksum{0};
+    /// 输出校验和。
+    nanoai_u64 checksum{0};
+    /// 输出是否正确。
     bool output_ok{false};
 };
 
 template <typename PipelineFactory>
 PerfResult run_perf_case(const std::string &name, int jobs, int submit_threads, PipelineFactory make_pipeline)
 {
+    // 为当前用例构建一条强类型流水线。
     auto pipeline = make_pipeline();
 
-    std::vector<int> outputs(static_cast<std::size_t>(jobs), 0);
+    std::vector<int> outputs(static_cast<nanoai_usize>(jobs), 0);
     std::atomic<int> next{0};
-    std::atomic<std::uint64_t> checksum{0};
+    std::atomic<nanoai_u64> checksum{0};
 
     const auto begin = std::chrono::steady_clock::now();
 
     std::vector<std::thread> workers;
-    workers.reserve(static_cast<std::size_t>(submit_threads));
+    workers.reserve(static_cast<nanoai_usize>(submit_threads));
     for (int t = 0; t < submit_threads; ++t)
     {
         workers.emplace_back([&]() {
@@ -82,8 +100,8 @@ PerfResult run_perf_case(const std::string &name, int jobs, int submit_threads, 
                     break;
                 }
                 const int out = pipeline.run(idx);
-                outputs[static_cast<std::size_t>(idx)] = out;
-                checksum.fetch_add(static_cast<std::uint64_t>(out), std::memory_order_relaxed);
+                outputs[static_cast<nanoai_usize>(idx)] = out;
+                checksum.fetch_add(static_cast<nanoai_u64>(out), std::memory_order_relaxed);
             }
         });
     }
@@ -100,8 +118,9 @@ PerfResult run_perf_case(const std::string &name, int jobs, int submit_threads, 
     bool output_ok = true;
     for (int i = 0; i < jobs; ++i)
     {
+        // 三阶段组合公式对应的真值。
         const int expected = cpu_spin_mix(cpu_spin_mix(cpu_spin_mix(i) + 3) + 5) + 7;
-        if (outputs[static_cast<std::size_t>(i)] != expected)
+        if (outputs[static_cast<nanoai_usize>(i)] != expected)
         {
             output_ok = false;
             break;
@@ -133,8 +152,8 @@ void print_result(const PerfResult &r)
 
 bool test_pool_performance_and_correctness()
 {
-    // 这里不使用固定性能阈值，以避免不同机器环境下误报。
-    // 测试通过条件：三种策略结果都正确，并成功输出性能统计。
+    // 不使用固定性能阈值，避免因机器差异导致误报。
+    // 通过条件: 三种策略都输出正确结果。
     const int jobs = 8000;
     const int submit_threads = static_cast<int>(std::max(4u, std::thread::hardware_concurrency()));
 

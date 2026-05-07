@@ -50,7 +50,7 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
             });
 
             std::vector<bool> removed(sorted_boxes.size(), false);
-            for (std::size_t i = 0; i < sorted_boxes.size(); ++i)
+            for (NanoAI_FLOW::nanoai_usize i = 0; i < sorted_boxes.size(); ++i)
             {
                 if (removed[i])
                 {
@@ -58,7 +58,7 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
                 }
 
                 output_boxes.push_back(sorted_boxes[i]);
-                for (std::size_t j = i + 1; j < sorted_boxes.size(); ++j)
+                for (NanoAI_FLOW::nanoai_usize j = i + 1; j < sorted_boxes.size(); ++j)
                 {
                     if (removed[j])
                     {
@@ -141,24 +141,24 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
             if (result.output.h == feature_dim && result.output.w > 0)
             {
                 num_candidates = result.output.w;
-                yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
+                yolo_features.assign(static_cast<NanoAI_FLOW::nanoai_usize>(feature_dim * num_candidates), 0.0F);
                 for (int f = 0; f < feature_dim; ++f)
                 {
                     const float *row = result.output.row(f);
-                    std::copy(row, row + num_candidates, yolo_features.begin() + static_cast<std::size_t>(f * num_candidates));
+                    std::copy(row, row + num_candidates, yolo_features.begin() + static_cast<NanoAI_FLOW::nanoai_usize>(f * num_candidates));
                 }
                 parsed_yolo_head = true;
             }
             else if (result.output.w == feature_dim && result.output.h > 0)
             {
                 num_candidates = result.output.h;
-                yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
+                yolo_features.assign(static_cast<NanoAI_FLOW::nanoai_usize>(feature_dim * num_candidates), 0.0F);
                 for (int i = 0; i < num_candidates; ++i)
                 {
                     const float *det = result.output.row(i);
                     for (int f = 0; f < feature_dim; ++f)
                     {
-                        yolo_features[static_cast<std::size_t>(f * num_candidates + i)] = det[f];
+                        yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>(f * num_candidates + i)] = det[f];
                     }
                 }
                 parsed_yolo_head = true;
@@ -169,7 +169,7 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
             if (result.output.c == feature_dim && result.output.h > 0 && result.output.w > 0)
             {
                 num_candidates = result.output.h * result.output.w;
-                yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
+                yolo_features.assign(static_cast<NanoAI_FLOW::nanoai_usize>(feature_dim * num_candidates), 0.0F);
                 for (int f = 0; f < feature_dim; ++f)
                 {
                     const ncnn::Mat channel_mat = result.output.channel(f);
@@ -179,7 +179,7 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
                         for (int x = 0; x < channel_mat.w; ++x)
                         {
                             const int i = y * channel_mat.w + x;
-                            yolo_features[static_cast<std::size_t>(f * num_candidates + i)] = row[x];
+                            yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>(f * num_candidates + i)] = row[x];
                         }
                     }
                 }
@@ -188,7 +188,7 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
             else if (result.output.h == feature_dim && result.output.c > 0 && result.output.w > 0)
             {
                 num_candidates = result.output.c * result.output.w;
-                yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
+                yolo_features.assign(static_cast<NanoAI_FLOW::nanoai_usize>(feature_dim * num_candidates), 0.0F);
                 for (int c = 0; c < result.output.c; ++c)
                 {
                     const ncnn::Mat channel_mat = result.output.channel(c);
@@ -198,7 +198,7 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
                         for (int x = 0; x < channel_mat.w; ++x)
                         {
                             const int i = c * channel_mat.w + x;
-                            yolo_features[static_cast<std::size_t>(f * num_candidates + i)] = row[x];
+                            yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>(f * num_candidates + i)] = row[x];
                         }
                     }
                 }
@@ -207,7 +207,7 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
             else if (result.output.w == feature_dim && result.output.c > 0 && result.output.h > 0)
             {
                 num_candidates = result.output.c * result.output.h;
-                yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
+                yolo_features.assign(static_cast<NanoAI_FLOW::nanoai_usize>(feature_dim * num_candidates), 0.0F);
                 for (int c = 0; c < result.output.c; ++c)
                 {
                     const ncnn::Mat channel_mat = result.output.channel(c);
@@ -217,7 +217,7 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
                         const int i = c * channel_mat.h + y;
                         for (int f = 0; f < feature_dim; ++f)
                         {
-                            yolo_features[static_cast<std::size_t>(f * num_candidates + i)] = row[f];
+                            yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>(f * num_candidates + i)] = row[f];
                         }
                     }
                 }
@@ -227,28 +227,28 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
 
         if (parsed_yolo_head)
         {
-            candidate_boxes.reserve(static_cast<std::size_t>(num_candidates));
+            candidate_boxes.reserve(static_cast<NanoAI_FLOW::nanoai_usize>(num_candidates));
             const float inv_ratio = result.meta.ratio > 0.0F ? (1.0F / result.meta.ratio) : 1.0F;
 
             bool class_need_sigmoid = false;
             for (int c = 0; c < class_count && !class_need_sigmoid; ++c)
             {
-                const float v = yolo_features[static_cast<std::size_t>((4 + c) * num_candidates)];
+                const float v = yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>((4 + c) * num_candidates)];
                 class_need_sigmoid = (v < 0.0F || v > 1.0F);
             }
 
             for (int i = 0; i < num_candidates; ++i)
             {
-                const float cx = yolo_features[static_cast<std::size_t>(i)];
-                const float cy = yolo_features[static_cast<std::size_t>(num_candidates + i)];
-                const float w = yolo_features[static_cast<std::size_t>(2 * num_candidates + i)];
-                const float h = yolo_features[static_cast<std::size_t>(3 * num_candidates + i)];
+                const float cx = yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>(i)];
+                const float cy = yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>(num_candidates + i)];
+                const float w = yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>(2 * num_candidates + i)];
+                const float h = yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>(3 * num_candidates + i)];
 
                 int best_class_id = -1;
                 float best_score = 0.0F;
                 for (int c = 0; c < class_count; ++c)
                 {
-                    float score = yolo_features[static_cast<std::size_t>((4 + c) * num_candidates + i)];
+                    float score = yolo_features[static_cast<NanoAI_FLOW::nanoai_usize>((4 + c) * num_candidates + i)];
                     if (class_need_sigmoid)
                     {
                         score = detail::sigmoid(score);
@@ -296,7 +296,7 @@ namespace NanoAI_NCNN::Projects::GaoTiePaiWu
         else if (result.output.w >= 6)
         {
             const int num_detections = result.output.h;
-            candidate_boxes.reserve(static_cast<std::size_t>(num_detections));
+            candidate_boxes.reserve(static_cast<NanoAI_FLOW::nanoai_usize>(num_detections));
             for (int i = 0; i < num_detections; ++i)
             {
                 const float *det = result.output.row(i);

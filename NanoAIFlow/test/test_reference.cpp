@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: test_reference.cpp
+// Brief: 验证可变引用在流水线阶段间的传播与副作用。
+
 #include <nanoai_flow/nanoai_flow.hpp>
 
 #include <iostream>
@@ -9,6 +16,7 @@ using namespace NanoAI_FLOW;
 namespace
 {
 
+/// 阶段 1：通过非常量引用修改输入。
 class IncrementByRefPipe : public NanoPipe<IncrementByRefPipe>
 {
 public:
@@ -19,6 +27,7 @@ public:
     }
 };
 
+/// 阶段 2：在修改后执行简单算术变换。
 class MinusPipe : public NanoPipe<MinusPipe>
 {
 public:
@@ -28,11 +37,16 @@ public:
     }
 };
 
+/// 测试结果结构体，包含输出与副作用检查。
 struct ReferenceResult
 {
+    /// 调用前输入值。
     int input_before{0};
+    /// 调用后输入值（用于验证引用副作用）。
     int input_after{0};
+    /// 期望输出值。
     int expected_output{0};
+    /// 实际输出值。
     int actual_output{0};
 
     bool ok() const
@@ -43,9 +57,8 @@ struct ReferenceResult
 
 ReferenceResult test_reference_input()
 {
-    // 功能预期：
-    // 原始值 10 经引用阶段修改为 12，再减 1 得到 11。
-    // 同时校验外部变量确实被引用语义修改。
+    // 预期链路: 10 --(ref +2)--> 12 --(-1)--> 11。
+    // 同时校验外部变量确实被引用语义修改为 12。
     IncrementByRefPipe inc;
     MinusPipe minus;
     NanoPipeLine pipeline(4, 16, inc, minus);

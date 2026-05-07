@@ -23,7 +23,7 @@ namespace NanoAI_NCNN::Projects::CarProject
         }
 
         const int num_detections = result.output.h;
-        detections.reserve(static_cast<std::size_t>(num_detections));
+        detections.reserve(static_cast<NanoAI_FLOW::nanoai_usize>(num_detections));
 
         for (int i = 0; i < num_detections; ++i)
         {

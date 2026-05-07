@@ -1,7 +1,17 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: copy.hpp
+// Brief: 提供禁止拷贝/移动语义的工具基类。
+
 #pragma once
 
 namespace NanoAI_FLOW
 {
+    /**
+        * @brief 禁止拷贝的混入基类。
+     */
     class NoCopyable
     {
     protected:
@@ -12,6 +22,9 @@ namespace NanoAI_FLOW
         NoCopyable &operator=(const NoCopyable &) = delete;
     };
 
+    /**
+        * @brief 禁止移动的混入基类。
+     */
     class NoMoveable
     {
     protected:
@@ -22,6 +35,9 @@ namespace NanoAI_FLOW
         NoMoveable &operator=(NoMoveable &&) = delete;
     };
 
+    /**
+        * @brief 同时禁止拷贝与移动的混入基类。
+     */
     class NoCopyMoveable
     {
     protected:

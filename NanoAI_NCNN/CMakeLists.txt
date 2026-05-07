@@ -97,13 +97,18 @@ message(STATUS "NanoAI_NCNN build mode: ${NANOAI_NCNN_BUILD_MODE}")
 # ======================================================
 get_filename_component(NANOAI_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
 
-set(NANOAIFLOW_ROOT_HOST "" CACHE PATH "NanoAIFlow host install prefix (optional)")
-set(NANOAIFLOW_ROOT_ANDROID "" CACHE PATH "NanoAIFlow Android install prefix (optional)")
+set(NANOAIFLOW_ROOT "" CACHE PATH "NanoAIFlow install prefix (platform-agnostic, optional)")
 
-if(ANDROID)
-    set(NANOAIFLOW_ROOT "${NANOAIFLOW_ROOT_ANDROID}")
-else()
-    set(NANOAIFLOW_ROOT "${NANOAIFLOW_ROOT_HOST}")
+# Backward compatibility for old variable names.
+set(NANOAIFLOW_ROOT_HOST "" CACHE PATH "[Deprecated] NanoAIFlow host install prefix")
+set(NANOAIFLOW_ROOT_ANDROID "" CACHE PATH "[Deprecated] NanoAIFlow Android install prefix")
+
+if(NOT NANOAIFLOW_ROOT)
+    if(NANOAIFLOW_ROOT_HOST)
+        set(NANOAIFLOW_ROOT "${NANOAIFLOW_ROOT_HOST}")
+    elseif(NANOAIFLOW_ROOT_ANDROID)
+        set(NANOAIFLOW_ROOT "${NANOAIFLOW_ROOT_ANDROID}")
+    endif()
 endif()
 
 if(NANOAIFLOW_ROOT)

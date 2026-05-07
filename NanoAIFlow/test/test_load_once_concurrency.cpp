@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (c) NanoAI
+//
+// File: test_load_once_concurrency.cpp
+// Brief: 验证并发争用下模型仅加载一次且输出正确。
+
 #include <nanoai_flow/nanoai_flow.hpp>
 
 #include <atomic>
@@ -15,6 +22,7 @@ using namespace NanoAI_FLOW;
 namespace
 {
 
+/// 加载阶段示例：load_model 理应仅被调用一次。
 class DemoLoader final : public LoadModelPipe<DemoLoader, 2, PipeExecutionPolicy::shared_pool>
 {
 public:
@@ -27,6 +35,7 @@ public:
     mutable std::atomic<int> load_count{0};
 };
 
+/// 模型加载之后的推理阶段示例。
 class DemoInfer final : public InferModelPipe<DemoInfer, 4, PipeExecutionPolicy::shared_pool>
 {
 public:
@@ -36,13 +45,20 @@ public:
     }
 };
 
+/// 并发“仅加载一次”验证结果。
 struct LoadOnceResult
 {
+    /// 总任务数。
     int jobs{0};
+    /// 工作线程数。
     int worker_count{0};
+    /// 实际加载次数，期望为 1。
     int load_count{0};
+    /// 首个不匹配索引，-1 表示无错误。
     int mismatch_index{-1};
+    /// 不匹配位置的期望值。
     int expected_at_mismatch{0};
+    /// 不匹配位置的实际值。
     int actual_at_mismatch{0};
 
     bool ok() const
@@ -57,14 +73,14 @@ LoadOnceResult test_load_once_with_concurrency()
     DemoInfer infer;
     NanoPipeLine pipeline(4, 32, std::ref(loader), infer);
 
-    // 并行执行大量任务，压测“仅加载一次模型”的行为。
+    // 并行执行大量任务，压测“仅加载一次模型”语义。
     constexpr int kJobs = 200;
     std::atomic<int> next{0};
-    std::vector<int> outputs(static_cast<std::size_t>(kJobs), 0);
+    std::vector<int> outputs(static_cast<nanoai_usize>(kJobs), 0);
 
     std::vector<std::thread> workers;
     const int worker_count = static_cast<int>(std::max(4u, std::thread::hardware_concurrency()));
-    workers.reserve(static_cast<std::size_t>(worker_count));
+    workers.reserve(static_cast<nanoai_usize>(worker_count));
 
     for (int i = 0; i < worker_count; ++i)
     {
@@ -76,7 +92,7 @@ LoadOnceResult test_load_once_with_concurrency()
                 {
                     break;
                 }
-                outputs[static_cast<std::size_t>(idx)] = pipeline.run(idx);
+                outputs[static_cast<nanoai_usize>(idx)] = pipeline.run(idx);
             }
         });
     }
@@ -91,11 +107,11 @@ LoadOnceResult test_load_once_with_concurrency()
     result.worker_count = worker_count;
     result.load_count = loader.load_count.load(std::memory_order_relaxed);
 
-    // 每个输出都应满足 infer(x) = x + 100。
+    // 每个输出都应满足 infer(x) = x + 100，不依赖执行顺序。
     for (int i = 0; i < kJobs; ++i)
     {
         const int expected = i + 100;
-        const int actual = outputs[static_cast<std::size_t>(i)];
+        const int actual = outputs[static_cast<nanoai_usize>(i)];
         if (actual != expected)
         {
             result.mismatch_index = i;

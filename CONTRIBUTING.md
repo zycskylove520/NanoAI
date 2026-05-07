@@ -62,7 +62,7 @@ cmake -S NanoAI_RKNN -B out/build/rknn-local \
 
 cmake -S NanoAI_NCNN -B out/build/ncnn-local \
   -DNANOAI_NCNN_BUILD_MODE=PACKAGE \
-  -DNANOAIFLOW_ROOT_HOST=/path/to/flow-install
+  -DNANOAIFLOW_ROOT=/path/to/flow-install
 
 ## 代码与文档要求
 
