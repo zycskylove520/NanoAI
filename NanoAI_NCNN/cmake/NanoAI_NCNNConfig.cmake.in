@@ -1,7 +1,21 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
-find_dependency(Threads)
+find_dependency(ncnn CONFIG)
 find_dependency(NanoAIFlow CONFIG)
 
 include("${CMAKE_CURRENT_LIST_DIR}/NanoAI_NCNNTargets.cmake")
+
+# Compatibility variables for consumers that still use *_INCLUDE_DIRS / *_LIBRARIES.
+set_and_check(NanoAI_NCNN_INCLUDE_DIR "${PACKAGE_PREFIX_DIR}/include")
+set(NanoAI_NCNN_INCLUDE_DIRS "${NanoAI_NCNN_INCLUDE_DIR}")
+set(NanoAI_NCNN_LIBRARY NanoAI_NCNN::NanoAI_NCNN)
+set(NanoAI_NCNN_LIBRARIES NanoAI_NCNN::NanoAI_NCNN)
+
+# Compatibility alias for historical namespace style.
+if(TARGET NanoAI_NCNN::NanoAI_NCNN AND NOT TARGET NanoAI::NanoAI_NCNN)
+	add_library(NanoAI::NanoAI_NCNN INTERFACE IMPORTED)
+	set_target_properties(NanoAI::NanoAI_NCNN PROPERTIES
+		INTERFACE_LINK_LIBRARIES NanoAI_NCNN::NanoAI_NCNN
+	)
+endif()

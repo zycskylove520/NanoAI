@@ -36,12 +36,3 @@ target_link_libraries(${NANOAI_NCNN_CAR_TARGET}
     ${NANOAI_NCNN_TARGET}
 )
 
-install(TARGETS ${NANOAI_NCNN_CAR_TARGET}
-    RUNTIME DESTINATION .
-)
-
-if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/model)
-    install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/model/
-        DESTINATION model
-    )
-endif()

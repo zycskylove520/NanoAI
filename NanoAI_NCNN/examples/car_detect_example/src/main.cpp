@@ -97,7 +97,6 @@ int main(int argc, char **argv)
     try
     {
         auto pipeline = NanoAI_NCNN::Projects::CarDetectionExample::make_car_pipeline(
-            "car_project_pipeline",
             args.param_path,
             args.bin_path,
             args.input_node,
@@ -105,7 +104,7 @@ int main(int argc, char **argv)
             2,
             false);
 
-        auto detections = pipeline.run(NanoAI_NCNN::CV::NcnnPipelineInput{input_image});
+        auto detections = pipeline.run(NanoAI_NCNN::CV::NcnnCvPipelineInput{input_image});
 
         for (const auto &bbox : detections)
         {

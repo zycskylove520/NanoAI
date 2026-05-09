@@ -165,7 +165,7 @@ bool test_pool_performance_and_correctness()
             auto p1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
             auto p2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
             auto p3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
-            return make_pipeline_builder(16, 64).add_pipe(p1).add_pipe(p2).add_pipe(p3).build();
+            return make_pipeline<PipeForwardOrder::ordered>(16, 64, p1, p2, p3);
         });
 
     const auto dedicated = run_perf_case(
@@ -176,7 +176,7 @@ bool test_pool_performance_and_correctness()
             auto p1 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(3);
             auto p2 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(5);
             auto p3 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(7);
-            return make_pipeline_builder(16, 64).add_pipe(p1).add_pipe(p2).add_pipe(p3).build();
+            return make_pipeline<PipeForwardOrder::ordered>(16, 64, p1, p2, p3);
         });
 
     const auto mixed = run_perf_case(
@@ -187,22 +187,51 @@ bool test_pool_performance_and_correctness()
             auto p1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
             auto p2 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(5);
             auto p3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
-            return make_pipeline_builder(16, 64).add_pipe(p1).add_pipe(p2).add_pipe(p3).build();
+            return make_pipeline<PipeForwardOrder::ordered>(16, 64, p1, p2, p3);
         });
 
     print_result(shared);
     print_result(dedicated);
     print_result(mixed);
 
-    const int pass_cases = static_cast<int>(shared.output_ok) + static_cast<int>(dedicated.output_ok) + static_cast<int>(mixed.output_ok);
+    const NanoPipeLineOptions mode_profile{16, 64};
+
+    const auto mode_ordered = run_perf_case(
+        "mode_ordered",
+        jobs,
+        submit_threads,
+        [&]() {
+            auto p1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
+            auto p2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
+            auto p3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
+            return make_pipeline<PipeForwardOrder::ordered>(mode_profile, p1, p2, p3);
+        });
+
+    const auto mode_unordered = run_perf_case(
+        "mode_unordered",
+        jobs,
+        submit_threads,
+        [&]() {
+            auto p1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
+            auto p2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
+            auto p3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
+            return make_pipeline<PipeForwardOrder::unordered>(mode_profile, p1, p2, p3);
+        });
+
+    print_result(mode_ordered);
+    print_result(mode_unordered);
+
+    const int pass_cases = static_cast<int>(shared.output_ok) + static_cast<int>(dedicated.output_ok) + static_cast<int>(mixed.output_ok) +
+                                                     static_cast<int>(mode_ordered.output_ok) + static_cast<int>(mode_unordered.output_ok);
     std::cout << "[RESULT] pool_performance"
               << " pass_cases=" << pass_cases
-              << "/3"
+                        << "/5"
               << " jobs=" << jobs
               << " submit_threads=" << submit_threads
               << '\n';
 
-    return shared.output_ok && dedicated.output_ok && mixed.output_ok;
+    return shared.output_ok && dedicated.output_ok && mixed.output_ok &&
+                     mode_ordered.output_ok && mode_unordered.output_ok;
 }
 
 } // namespace

@@ -58,7 +58,7 @@ BasicChainResult test_basic_chain()
     // 预期链路: 5 -> AddOnePipe -> DoublePipe = 12。
     AddOnePipe add;
     DoublePipe dbl;
-    NanoPipeLine pipeline(4, 16, add, dbl);
+    auto pipeline = make_pipeline<PipeForwardOrder::ordered>(4, 16, add, dbl);
 
     BasicChainResult result;
     result.input = 5;

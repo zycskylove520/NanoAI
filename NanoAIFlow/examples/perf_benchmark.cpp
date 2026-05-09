@@ -192,6 +192,15 @@ void print_bench_result(const BenchResult &result)
               << '\n';
 }
 
+double pct_delta(double baseline, double current)
+{
+    if (baseline <= 0.0)
+    {
+        return 0.0;
+    }
+    return (current - baseline) * 100.0 / baseline;
+}
+
 int main()
 {
     // 基准测试分为两段：高压吞吐阶段 + 严格顺序对照阶段。
@@ -210,7 +219,7 @@ int main()
             auto pipe1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
             auto pipe2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
             auto pipe3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
-            return make_pipeline_builder(16, 64).add_pipe(pipe1).add_pipe(pipe2).add_pipe(pipe3).build();
+            return make_pipeline<PipeForwardOrder::ordered>(16, 64, pipe1, pipe2, pipe3);
         });
 
     const auto dedicated_result = run_high_concurrency_benchmark(
@@ -221,7 +230,7 @@ int main()
             auto pipe1 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(3);
             auto pipe2 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(5);
             auto pipe3 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(7);
-            return make_pipeline_builder(16, 64).add_pipe(pipe1).add_pipe(pipe2).add_pipe(pipe3).build();
+            return make_pipeline<PipeForwardOrder::ordered>(16, 64, pipe1, pipe2, pipe3);
         });
 
     const auto mixed_result = run_high_concurrency_benchmark(
@@ -232,12 +241,106 @@ int main()
             auto pipe1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
             auto pipe2 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(5);
             auto pipe3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
-            return make_pipeline_builder(16, 64).add_pipe(pipe1).add_pipe(pipe2).add_pipe(pipe3).build();
+            return make_pipeline<PipeForwardOrder::ordered>(16, 64, pipe1, pipe2, pipe3);
         });
 
     print_bench_result(shared_result);
     print_bench_result(dedicated_result);
     print_bench_result(mixed_result);
+
+    std::cout << "\n========== Pipeline Fixed Modes (ordered/unordered) ==========" << '\n';
+
+    const NanoPipeLineOptions mode_profile{16, 64};
+
+    const auto mode_ordered = run_high_concurrency_benchmark(
+        "mode_ordered",
+        jobs,
+        submit_threads,
+        [&]() {
+            auto pipe1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
+            auto pipe2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
+            auto pipe3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
+            return make_pipeline<PipeForwardOrder::ordered>(mode_profile, pipe1, pipe2, pipe3);
+        });
+
+    const auto mode_unordered = run_high_concurrency_benchmark(
+        "mode_unordered",
+        jobs,
+        submit_threads,
+        [&]() {
+            auto pipe1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
+            auto pipe2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
+            auto pipe3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
+            return make_pipeline<PipeForwardOrder::unordered>(mode_profile, pipe1, pipe2, pipe3);
+        });
+
+    print_bench_result(mode_ordered);
+    print_bench_result(mode_unordered);
+
+    std::cout << "\n========== Ordered Adaptive Profiles (default/throughput/latency) ==========" << '\n';
+
+    const NanoPipeLineOptions profile_default{16, 64};
+
+    auto profile_throughput = profile_default;
+    profile_throughput.drain_batch_min = 64;
+    profile_throughput.drain_batch_max = 1024;
+    profile_throughput.drain_fast_threshold_us = 120;
+    profile_throughput.drain_slow_threshold_us = 500;
+    profile_throughput.yield_on_full_batch = false;
+    profile_throughput.yield_on_slow_batch = true;
+
+    auto profile_latency = profile_default;
+    profile_latency.drain_batch_min = 4;
+    profile_latency.drain_batch_max = 128;
+    profile_latency.drain_fast_threshold_us = 40;
+    profile_latency.drain_slow_threshold_us = 180;
+    profile_latency.yield_on_full_batch = true;
+    profile_latency.yield_on_slow_batch = true;
+
+    const auto profile_default_result = run_high_concurrency_benchmark(
+        "profile_default_ordered",
+        jobs,
+        submit_threads,
+        [&]() {
+            auto pipe1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
+            auto pipe2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
+            auto pipe3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
+            return make_pipeline<PipeForwardOrder::ordered>(profile_default, pipe1, pipe2, pipe3);
+        });
+
+    const auto profile_throughput_result = run_high_concurrency_benchmark(
+        "profile_throughput_ordered",
+        jobs,
+        submit_threads,
+        [&]() {
+            auto pipe1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
+            auto pipe2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
+            auto pipe3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
+            return make_pipeline<PipeForwardOrder::ordered>(profile_throughput, pipe1, pipe2, pipe3);
+        });
+
+    const auto profile_latency_result = run_high_concurrency_benchmark(
+        "profile_latency_ordered",
+        jobs,
+        submit_threads,
+        [&]() {
+            auto pipe1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
+            auto pipe2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
+            auto pipe3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
+            return make_pipeline<PipeForwardOrder::ordered>(profile_latency, pipe1, pipe2, pipe3);
+        });
+
+    print_bench_result(profile_default_result);
+    print_bench_result(profile_throughput_result);
+    print_bench_result(profile_latency_result);
+
+    std::cout << "[PROFILE-DELTA] throughput_vs_default"
+              << " ordered=" << std::fixed << std::setprecision(2) << pct_delta(profile_default_result.qps, profile_throughput_result.qps) << "%"
+              << '\n';
+
+    std::cout << "[PROFILE-DELTA] latency_vs_default"
+              << " ordered=" << std::fixed << std::setprecision(2) << pct_delta(profile_default_result.qps, profile_latency_result.qps) << "%"
+              << '\n';
 
     std::cout << "\n========== Strict Order Control (single submit thread) ==========" << '\n';
     std::cout << "[CONFIG] jobs=" << strict_order_jobs << ", submit_threads=1" << '\n';
@@ -250,7 +353,7 @@ int main()
             auto pipe1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
             auto pipe2 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(5);
             auto pipe3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
-            return make_pipeline_builder(16, 64).add_pipe(pipe1).add_pipe(pipe2).add_pipe(pipe3).build();
+            return make_pipeline<PipeForwardOrder::ordered>(16, 64, pipe1, pipe2, pipe3);
         });
 
     const auto dedicated_strict = run_high_concurrency_benchmark(
@@ -261,7 +364,7 @@ int main()
             auto pipe1 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(3);
             auto pipe2 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(5);
             auto pipe3 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(7);
-            return make_pipeline_builder(16, 64).add_pipe(pipe1).add_pipe(pipe2).add_pipe(pipe3).build();
+            return make_pipeline<PipeForwardOrder::ordered>(16, 64, pipe1, pipe2, pipe3);
         });
 
     const auto mixed_strict = run_high_concurrency_benchmark(
@@ -272,7 +375,7 @@ int main()
             auto pipe1 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(3);
             auto pipe2 = ComputePipe<PipeExecutionPolicy::dedicated_pool, 8, 4>(5);
             auto pipe3 = ComputePipe<PipeExecutionPolicy::shared_pool, 8>(7);
-            return make_pipeline_builder(16, 64).add_pipe(pipe1).add_pipe(pipe2).add_pipe(pipe3).build();
+            return make_pipeline<PipeForwardOrder::ordered>(16, 64, pipe1, pipe2, pipe3);
         });
 
     print_bench_result(shared_strict);

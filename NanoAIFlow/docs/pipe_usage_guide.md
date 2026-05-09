@@ -1,7 +1,7 @@
 # NanoAI 管线框架用法指南（当前版本）
 
 > 本文档对应当前 `core/pipe.hpp` 与 `core/pipeline.hpp` 的实现。
-> 重点：NanoAI 现为**静态类型、编译期固定节点**的管线模型，不再使用 `std::any/PipeValue`。
+> 重点：NanoAI 现为**静态类型、编译期固定节点**的管线模型。
 
 ## 1. 核心概念
 
@@ -54,14 +54,18 @@ public:
 AddOnePipe add;
 MulPipe mul;
 
-NanoAI_FLOW::NanoPipeLine pipeline(8, 64, add, mul);
+auto pipeline = NanoAI_FLOW::make_pipeline<NanoAI_FLOW::PipeForwardOrder::ordered>(
+    8,
+    64,
+    add,
+    mul);
 int out = pipeline.run(10);  // (10 + 1) * 2 = 22
 ```
 
 ### 3.2 使用 builder 链式追加节点
 
 ```cpp
-auto pipeline = NanoAI_FLOW::make_pipeline_builder(8, 64)
+auto pipeline = NanoAI_FLOW::make_pipeline_builder<NanoAI_FLOW::PipeForwardOrder::ordered>(8, 64)
                     .add_pipe(AddOnePipe{})
                     .add_pipe(MulPipe{})
                     .build();
@@ -70,8 +74,9 @@ int out = pipeline.run(10);
 ```
 
 注意：
-- `add_pipe(...)` 返回的是**新类型的新管线对象**，不是就地修改。
-- 若要链式构建，建议使用 `make_pipeline_builder(...)`。
+- builder 仅支持**右值链式**（临时对象链式调用）。
+- 左值 builder 的 `add_pipe(...)` 与 `build()` 已禁用，误用会在编译期报错。
+- 正确写法：`make_pipeline_builder<...>(...).add_pipe(...).build()`。
 
 ## 4. 参数传递规则
 
@@ -130,9 +135,11 @@ public:
 
 ## 6. 常见误区
 
-1. 误区：`NanoPipeLine p; p.add_pipe(a)->add_pipe(b);`
-   - 问题：`add_pipe` 不是指针返回，且会返回新对象。
-   - 建议：使用 builder，或接收返回值。
+1. 误区：
+    - `auto b = make_pipeline_builder<...>(...); b.add_pipe(a);`
+    - `auto b = make_pipeline_builder<...>(...); b.build();`
+    - 问题：左值 builder 已禁用这两个接口，会直接编译报错。
+    - 建议：改为右值链式：`make_pipeline_builder<...>(...).add_pipe(...).build()`。
 
 2. 误区：继续使用 `PipeValue/NanoPipeBase/std::any_cast`。
    - 问题：这是旧接口模型。

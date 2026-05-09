@@ -42,23 +42,4 @@ namespace NanoAI_NCNN
         bool loaded{false};
     };
 
-    struct NcnnCvMeta
-    {
-        float ratio{1.0F};
-        int pad_x{0};
-        int pad_y{0};
-        int src_width{0};
-        int src_height{0};
-        int dst_width{0};
-        int dst_height{0};
-    };
-
-    struct NcnnInferResult
-    {
-        std::shared_ptr<NcnnRuntimeContext> runtime{};
-        ncnn::Mat output{};
-        NcnnCvMeta meta{};
-        std::any user_data{};
-    };
-
 } // namespace NanoAI_NCNN

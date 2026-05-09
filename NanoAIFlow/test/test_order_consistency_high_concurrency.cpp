@@ -101,7 +101,7 @@ ConcurrencyCheckResult test_order_consistency_high_concurrency()
     AddPipe add;
     MulPipe mul;
     MinusPipe minus;
-    NanoPipeLine pipeline(16, 128, add, mul, minus);
+    auto pipeline = make_pipeline<PipeForwardOrder::ordered>(16, 128, add, mul, minus);
 
     constexpr int kJobs = 4000;
     const int worker_count = static_cast<int>(std::max(8u, std::thread::hardware_concurrency()));
@@ -162,7 +162,7 @@ StrictOrderResult test_order_consistency_strict_control()
     AddPipe add;
     MulPipe mul;
     MinusPipe minus;
-    NanoPipeLine pipeline(16, 128, add, mul, minus);
+    auto pipeline = make_pipeline<PipeForwardOrder::ordered>(16, 128, add, mul, minus);
 
     constexpr int kJobs = 2000;
     std::vector<int> completion_order;

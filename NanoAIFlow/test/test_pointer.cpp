@@ -61,7 +61,7 @@ PointerResult test_pointer_input()
     // 预期链路: (&7) -> 8 -> 24。
     ReadPointerPipe read;
     MultiplyPipe mul;
-    NanoPipeLine pipeline(4, 16, read, mul);
+    auto pipeline = make_pipeline<PipeForwardOrder::ordered>(4, 16, read, mul);
 
     int x = 7;
     PointerResult result;

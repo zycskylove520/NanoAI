@@ -3,7 +3,7 @@
 本文档用于说明：
 
 1. 有哪些可配置项。
-2. 如何构建第三方包（`PACKAGE`）。
+2. 仅支持本地 INTERFACE 构建，不再支持 PACKAGE/安装。
 3. 如何构建项目（`PROJECTS`）。
 4. 如何选择性编译 `projects/` 子项目。
 
@@ -11,19 +11,18 @@
 
 `NanoAI_NCNN` 通过 `NANOAI_NCNN_BUILD_MODE` 选择模式，二选一：
 
-- `PACKAGE`：生成并安装可复用 CMake 包（支持 `find_package`）。
+- `PROJECTS`：仅本地 INTERFACE 构建。
 - `PROJECTS`：构建 `projects/` 下项目。
 
-默认值：`PACKAGE`
+默认值：`PROJECTS`
 
 ## 2. 顶层 CMake 主要选项
 
 ### 2.1 模式与路径
 
-- `NANOAI_NCNN_BUILD_MODE`：`PACKAGE` / `PROJECTS`
+- `NANOAI_NCNN_BUILD_MODE`：`PROJECTS`（仅支持）
 - `NANOAI_NCNN_PROJECTS`：`ALL` / `NONE` / `projA;projB`（仅 `PROJECTS` 模式有效）
 - `NANOAIFLOW_ROOT`：NanoAIFlow 安装前缀（平台无关，可选）
-- `NANOAI_NCNN_INSTALL_CMAKEDIR`：安装时导出 CMake 配置文件目录
 
 ### 2.2 交叉编译预设
 
@@ -45,35 +44,27 @@
 ```bash
 cmake -S NanoAI_NCNN -B NanoAI_NCNN/build_android \
 
-# NanoAI_NCNN 安装、find_package 与交叉编译指南
+# NanoAI_NCNN 构建、find_package 与交叉编译指南
 
-本指南说明如何始终将 NanoAI_NCNN 安装为可复用 CMake 包，并在第三方项目中通过 find_package 引入。examples 可选构建，主库始终 install。
+本指南说明 NanoAI_NCNN 仅本地 INTERFACE 构建，第三方项目通过 find_package(NanoAIFlow) 依赖。examples 可选构建。
 
-## 1. 安装 NanoAI_NCNN（始终 install 框架）
+
+## 1. 构建 NanoAI_NCNN（仅本地 INTERFACE 构建）
 
 在 NanoAI_NCNN 目录执行：
-
-  cmake -S . -B build_pkg -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install -DCMAKE_INSTALL_PREFIX=/your/install/prefix
-  cmake --build build_pkg -j
-  cmake --install build_pkg
-
-如需构建 examples，可加 -DNANOAI_NCNN_BUILD_EXAMPLES=ON
 
   cmake -S . -B build_example -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install -DNANOAI_NCNN_BUILD_EXAMPLES=ON
   cmake --build build_example -j
 
-安装后会导出：
 
-- `NanoAI_NCNNConfig.cmake`
-- `NanoAI_NCNNConfigVersion.cmake`
-- `NanoAI_NCNNTargets.cmake`
-
-## 2. 第三方项目中使用 find_package
+## 2. 第三方项目中使用 find_package(NanoAIFlow)
 
 ```cmake
-find_package(NanoAI_NCNN CONFIG REQUIRED)
-add_executable(app main.cpp)
 target_link_libraries(app PRIVATE NanoAI_NCNN::NanoAI_NCNN)
+
+find_package(NanoAIFlow CONFIG REQUIRED)
+add_executable(app main.cpp)
+target_link_libraries(app PRIVATE NanoAI::Flow)
 ```
 
 若安装前缀不在系统默认搜索路径：
@@ -100,9 +91,9 @@ target_link_libraries(app PRIVATE NanoAI_NCNN::NanoAI_NCNN)
 - `NANOAI_NCNN_NCNN_INCLUDE_DIR`
 - `NANOAI_NCNN_NCNN_LIBRARY_DIR`
 - `NANOAI_NCNN_NCNN_LIBRARY`
-- `NANOAI_NCNN_OPENCV_DIR`
+- `OPENCV_CMAKE_DIR`
   -DNANOAI_NCNN_NCNN_LIBRARY_DIR=/path/to/ncnn/android-aarch64/install/lib \
-  -DNANOAI_NCNN_OPENCV_DIR=/path/to/OpenCV-android-sdk/sdk/native/jni \
+  -DOPENCV_CMAKE_DIR=/path/to/OpenCV-android-sdk/sdk/native/jni \
   -DNANOAI_NCNN_ANDROID_ABI=arm64-v8a \
   -DNANOAI_NCNN_ANDROID_PLATFORM=android-26 \
   -DNANOAI_NCNN_BUILD_MODE=PROJECTS \
@@ -135,4 +126,4 @@ cmake --build NanoAI_NCNN/build_android -j
 1. `NANOAIFLOW_ROOT` 是否指向正确安装目录。
   也可直接传 `CMAKE_PREFIX_PATH` 或 `NanoAIFlow_DIR`。
 2. `NANOAI_NCNN_NCNN_INCLUDE_DIR` 与 `NANOAI_NCNN_NCNN_LIBRARY_DIR` 是否正确。
-3. `NANOAI_NCNN_OPENCV_DIR` 是否可被 `find_package(OpenCV)` 识别。
+3. `OPENCV_CMAKE_DIR` 是否可被 `find_package(OpenCV)` 识别。

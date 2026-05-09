@@ -1,40 +1,37 @@
 include_guard(GLOBAL)
 
-set(NANOAI_NCNN_OPENCV_DIR "" CACHE PATH "OpenCV_DIR for find_package(OpenCV)")
+set(OPENCV_CMAKE_DIR "" CACHE PATH "OpenCV_DIR for find_package(OpenCV)")
+set(NANOAI_NCNN_OPENCV_COMPONENTS "core;imgproc;imgcodecs" CACHE STRING "OpenCV components for NanoAI_NCNN public API")
 
-# linux x86_64 预设启用 OpenCV 依赖，且默认自动搜索，用户需要根据实际情况提供 OpenCV_DIR
-if(NANOAI_NCNN_LINUX_x86_64_PRESET)
-    if(NANOAI_NCNN_OPENCV_DIR STREQUAL "")
-        find_package(OpenCV REQUIRED)
+if(NANOAI_NCNN_WITH_OPENCV)
+    set(_NANOAI_NCNN_OPENCV_FIND_ARGS REQUIRED)
+    if(NOT NANOAI_NCNN_OPENCV_COMPONENTS STREQUAL "")
+        list(APPEND _NANOAI_NCNN_OPENCV_FIND_ARGS COMPONENTS ${NANOAI_NCNN_OPENCV_COMPONENTS})
+    endif()
+
+    if(OPENCV_CMAKE_DIR STREQUAL "")
+        find_package(OpenCV ${_NANOAI_NCNN_OPENCV_FIND_ARGS})
     else()
-        set(OpenCV_DIR ${NANOAI_NCNN_OPENCV_DIR})
-        find_package(OpenCV REQUIRED)
-    endif()
-endif()
-
-# Android 预设启用 OpenCV 依赖，且默认 OpenCV_DIR 为空，用户需要手动提供 OpenCV_DIR
-if(NANOAI_NCNN_ANDROID_PRESET)
-    if(NANOAI_NCNN_OPENCV_DIR STREQUAL "")
-        message(FATAL_ERROR
-            "OpenCV dependency is enabled but OpenCV_DIR is not set. "
-            "Please provide -DNANOAI_NCNN_OPENCV_DIR."
-        )
+        set(OpenCV_DIR ${OPENCV_CMAKE_DIR})
+        find_package(OpenCV ${_NANOAI_NCNN_OPENCV_FIND_ARGS})
     endif()
 
-    # # OpenCV Android SDK's OpenCVConfig.cmake uses ANDROID_NDK_ABI_NAME to
-    # # choose abi-<name>/OpenCVConfig.cmake. Newer NDK toolchains may only set
-    # # CMAKE_ANDROID_ARCH_ABI / ANDROID_ABI, so bridge it here.
-    # if((NOT DEFINED ANDROID_NDK_ABI_NAME OR ANDROID_NDK_ABI_NAME STREQUAL ""))
-    #     if(DEFINED CMAKE_ANDROID_ARCH_ABI AND NOT CMAKE_ANDROID_ARCH_ABI STREQUAL "")
-    #         set(ANDROID_NDK_ABI_NAME "${CMAKE_ANDROID_ARCH_ABI}" CACHE STRING "Android ABI name for OpenCV Android SDK" FORCE)
-    #     elseif(DEFINED ANDROID_ABI AND NOT ANDROID_ABI STREQUAL "")
-    #         set(ANDROID_NDK_ABI_NAME "${ANDROID_ABI}" CACHE STRING "Android ABI name for OpenCV Android SDK" FORCE)
-    #     endif()
-    # endif()
+    if(OpenCV_INCLUDE_DIRS)
+        list(APPEND NANOAI_NCNN_INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
+    endif()
 
-    set(OpenCV_DIR ${NANOAI_NCNN_OPENCV_DIR})
-    find_package(OpenCV REQUIRED)
+    set(_NANOAI_NCNN_OPENCV_TARGET_LIBS)
+    if(OpenCV_LIBS)
+        foreach(_ncnn_opencv_lib IN LISTS OpenCV_LIBS)
+            if(TARGET ${_ncnn_opencv_lib})
+                list(APPEND _NANOAI_NCNN_OPENCV_TARGET_LIBS ${_ncnn_opencv_lib})
+            endif()
+        endforeach()
+    endif()
+
+    if(_NANOAI_NCNN_OPENCV_TARGET_LIBS)
+        list(APPEND NANOAI_NCNN_LINK_LIBS ${_NANOAI_NCNN_OPENCV_TARGET_LIBS})
+    else()
+        list(APPEND NANOAI_NCNN_LINK_LIBS ${OpenCV_LIBS})
+    endif()
 endif()
-
-list(APPEND NANOAI_NCNN_INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
-list(APPEND NANOAI_NCNN_LINK_LIBS ${OpenCV_LIBS})

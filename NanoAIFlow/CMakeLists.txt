@@ -19,8 +19,6 @@ option(NANOAIFLOW_BUILD_TESTS "Build NanoAIFlow tests (optional)" OFF)
 option(NANOAIFLOW_BUILD_EXAMPLES "Build NanoAIFlow examples (optional)" OFF)
 option(NANOAIFLOW_ENABLE_CPACK "Enable CPack package generation (optional)" OFF)
 
-find_package(Threads REQUIRED)
-
 ## 头文件库目标与命名空间别名目标（始终 install，INTERFACE 链接依赖）
 add_library(NanoAIFlow INTERFACE)
 add_library(NanoAI::Flow ALIAS NanoAIFlow)
@@ -32,7 +30,6 @@ target_include_directories(NanoAIFlow
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/thread-pool/include>
         $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(NanoAIFlow INTERFACE Threads::Threads)
 
 ## 安装 CMake 包配置文件目录
 set(NANOAIFLOW_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/NanoAIFlow" CACHE STRING "Install path for NanoAIFlow CMake package files")

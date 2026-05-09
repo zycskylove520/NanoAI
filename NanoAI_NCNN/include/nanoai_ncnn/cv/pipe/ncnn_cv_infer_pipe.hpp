@@ -34,7 +34,19 @@ namespace NanoAI_NCNN::CV
         {
         }
 
-        auto on_run(const std::shared_ptr<NcnnRuntimeContext> &runtime, const NcnnPreprocessPacket &input)
+        auto on_run(const std::shared_ptr<NcnnRuntimeContext> &runtime, const NcnnCvPacket_RgbNormalize &input)
+        {
+            return on_run_impl(runtime, input);
+        }
+
+        auto on_run(const std::shared_ptr<NcnnRuntimeContext> &runtime, NcnnCvPacket_RgbNormalize &&input)
+        {
+            return on_run_impl(runtime, std::move(input));
+        }
+
+    private:
+        template <typename T>
+        auto on_run_impl(const std::shared_ptr<NcnnRuntimeContext> &runtime, T &&input)
         {
             if (!runtime || !runtime->net)
             {
@@ -42,16 +54,15 @@ namespace NanoAI_NCNN::CV
             }
 
             ncnn::Extractor extractor = runtime->net->create_extractor();
-            const int input_ret = extractor.input(input_name_.c_str(), input.input);
+            const int input_ret = extractor.input(input_name_.c_str(), input.image);
             if (input_ret != 0)
             {
                 throw std::runtime_error("NcnnCvInferPipe::on_run: extractor.input failed");
             }
 
-            NcnnInferResult result;
-            result.runtime = runtime;
-            result.meta = input.meta;
-            result.user_data = input.user_data;
+            NcnnCvInferResult result;
+            result.pr = input.pr;
+            result.user_data = std::forward<T>(input).user_data;
 
             const int extract_ret = extractor.extract(output_name_.c_str(), result.output);
             if (extract_ret != 0)
@@ -62,7 +73,6 @@ namespace NanoAI_NCNN::CV
             return std::make_tuple(runtime, std::move(result));
         }
 
-    private:
         std::string input_name_;
         std::string output_name_;
     };

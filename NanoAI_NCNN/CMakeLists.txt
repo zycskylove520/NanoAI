@@ -37,16 +37,18 @@ project(NanoAI_NCNN VERSION 1.0.0 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/NanoAINCNNCommon.cmake)
 nanoai_setup_global_options()
 
 
 ## =====================================================
 # 构建行为
-# 框架始终 install，examples 可选构建，所有依赖 INTERFACE 链接。
+# 框架仅做本地构建，examples 可选构建，所有依赖 INTERFACE 链接。
 ## =====================================================
 option(NANOAI_NCNN_BUILD_EXAMPLES "Build NanoAI_NCNN examples (optional)" OFF)
 set(NANOAI_NCNN_EXAMPLES "ALL" CACHE STRING "Semicolon-separated example names under examples/ (ALL or example names)")
+option(NANOAI_NCNN_ENABLE_CPACK "Enable CPack package generation (optional)" OFF)
 
 message(STATUS "NanoAI_NCNN build examples: ${NANOAI_NCNN_BUILD_EXAMPLES}")
 message(STATUS "NanoAI_NCNN selected examples: ${NANOAI_NCNN_EXAMPLES}")
@@ -56,14 +58,14 @@ message(STATUS "NanoAI_NCNN selected examples: ${NANOAI_NCNN_EXAMPLES}")
 # ======================================================
 get_filename_component(NANOAI_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
 
+set(NANOAI_NCNN_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/NanoAI_NCNN" CACHE STRING "Install path for NanoAI_NCNN CMake package files")
+
 set(NANOAIFLOW_ROOT "" CACHE PATH "NanoAIFlow install prefix (platform-agnostic, optional)")
 
 if(NANOAIFLOW_ROOT)
     # 让 find_package() 可以优先从指定安装目录查找 NanoAIFlow。
     list(APPEND CMAKE_PREFIX_PATH "${NANOAIFLOW_ROOT}")
 endif()
-
-set(NANOAI_NCNN_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/NanoAI_NCNN" CACHE STRING "Install path for NanoAI_NCNN CMake package files")
 
 # ======================================================
 # 内容配置
@@ -78,11 +80,10 @@ set(NANOAI_NCNN_LINK_LIBS)  # NanoAI_NCNN 链接库列表，可能会在第三�
 # ======================================================
 
 # threads 依赖
-set(_NANOAI_NCNN_NEED_THREADS ON)
-find_package(Threads REQUIRED)
+# set(_NANOAI_NCNN_NEED_THREADS ON)
+# find_package(Threads REQUIRED)
 
 # NanoAIFlow 依赖
-set(_NANOAI_NCNN_NEED_FLOW ON)
 find_package(NanoAIFlow CONFIG REQUIRED)
 if(NOT TARGET NanoAI::Flow)
     message(FATAL_ERROR
@@ -111,15 +112,8 @@ set(NANOAI_NCNN_BASE_LIBS
     dl
     m
     stdc++
+    NanoAI::Flow
 )
-
-if(_NANOAI_NCNN_NEED_THREADS)
-    list(APPEND NANOAI_NCNN_BASE_LIBS Threads::Threads)
-endif()
-
-if(_NANOAI_NCNN_NEED_FLOW)
-    list(APPEND NANOAI_NCNN_BASE_LIBS NanoAI::Flow)
-endif()
 
 # ======================================================
 # 目标定义
@@ -151,7 +145,7 @@ target_link_libraries(NanoAI_NCNN
 add_library(NanoAI_NCNN::NanoAI_NCNN ALIAS NanoAI_NCNN)
 
 # ======================================================
-# 包导出与安装（始终可用）
+# 包导出与安装
 # ======================================================
 install(TARGETS NanoAI_NCNN
     EXPORT NanoAI_NCNNTargets
@@ -184,6 +178,14 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/NanoAI_NCNNConfigVersion.cmake"
     DESTINATION ${NANOAI_NCNN_INSTALL_CMAKEDIR}
 )
+
+if(NANOAI_NCNN_ENABLE_CPACK)
+    set(CPACK_PACKAGE_NAME "NanoAI_NCNN")
+    set(CPACK_PACKAGE_VENDOR "NanoAI")
+    set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+    set(CPACK_GENERATOR "TGZ;ZIP")
+    include(CPack)
+endif()
 
 # ======================================================
 # 示例构建（可选）

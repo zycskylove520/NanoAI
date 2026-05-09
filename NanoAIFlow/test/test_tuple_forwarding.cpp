@@ -57,10 +57,11 @@ struct TupleForwardingResult
 TupleForwardingResult test_tuple_forwarding()
 {
     // 预期链路: 3 -> (3, 13) -> 16。
-    auto pipeline = make_pipeline_builder(4, 16)
-                        .add_pipe(TuplePackPipe{})
-                        .add_pipe(TupleConsumePipe{})
-                        .build();
+    auto pipeline = make_pipeline<PipeForwardOrder::ordered>(
+        4,
+        16,
+        TuplePackPipe{},
+        TupleConsumePipe{});
 
     TupleForwardingResult result;
     result.input = 3;

@@ -17,52 +17,44 @@
 
 namespace NanoAI_NCNN::CV
 {
-    struct NcnnImagePacket
-    {
-        std::shared_ptr<NcnnRuntimeContext> runtime{};
-        cv::Mat image{};
-        std::any user_data{};
-    };
-
-    struct NcnnPipelineInput
+    /*--------------------------User Input-----------------------*/
+    // 2D image input from user, can be extended to support more complex input in the future
+    struct NcnnCvPipelineInput
     {
         cv::Mat image{};
         std::any user_data{};
     };
 
-    struct NcnnPreprocessPacket
+    /*--------------------------Preprocess Operation-----------------------*/
+    struct NcnnCvPadRatio
     {
-        std::shared_ptr<NcnnRuntimeContext> runtime{};
-        ncnn::Mat input{};
-        NcnnCvMeta meta{};
+        float ratio{1.0F};
+        int pad_x{0};
+        int pad_y{0};
+        int src_width{0};
+        int src_height{0};
+    };
+
+    struct NcnnCvPacket_LetterBox
+    {
+        cv::Mat image{};
+        NcnnCvPadRatio pr{};
         std::any user_data{};
     };
 
-    inline NcnnImagePacket ncnn_make_image_packet(const NcnnPipelineInput &input, const std::shared_ptr<NcnnRuntimeContext> &runtime)
+    struct NcnnCvPacket_RgbNormalize
     {
-        NcnnImagePacket out;
-        out.runtime = runtime;
-        out.image = input.image;
-        out.user_data = input.user_data;
-        return out;
-    }
+        ncnn::Mat image{};
+        NcnnCvPadRatio pr{};
+        std::any user_data{};
+    };
 
-    inline NcnnImagePacket ncnn_make_image_packet(const NcnnImagePacket &input, const std::shared_ptr<NcnnRuntimeContext> &runtime)
+    /*--------------------------Infer Operation-----------------------*/
+    struct NcnnCvInferResult
     {
-        NcnnImagePacket out = input;
-        if (!out.runtime)
-        {
-            out.runtime = runtime;
-        }
-        return out;
-    }
-
-    inline NcnnImagePacket ncnn_make_image_packet(const cv::Mat &input, const std::shared_ptr<NcnnRuntimeContext> &runtime)
-    {
-        NcnnImagePacket out;
-        out.runtime = runtime;
-        out.image = input;
-        return out;
-    }
+        ncnn::Mat output{};
+        NcnnCvPadRatio pr{};
+        std::any user_data{};
+    };
 
 } // namespace NanoAI_NCNN::CV

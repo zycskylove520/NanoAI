@@ -6,13 +6,16 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Edit these paths to your local dependency locations.
 TOOLCHAIN_FILE="${SCRIPT_DIR}/cmake/toolchains/ncnn-linux-x86_64-gcc.cmake"
-NCNN_INCLUDE_DIR="${SCRIPT_DIR}/3rdparty/ncnn/ubuntu-x86_64/install/include"
-NCNN_LIBRARY_DIR="${SCRIPT_DIR}/3rdparty/ncnn/ubuntu-x86_64/install/lib"
-NANOAI_NCNN_OPENCV_DIR=""  # 不填则自动寻找linux系统上的opencv
+NCNN_CMAKE_DIR="${SCRIPT_DIR}/3rdparty/ncnn/ubuntu-x86_64/install/lib/cmake/ncnn"
+OPENCV_CMAKE_DIR=""  # 不填则自动寻找linux系统上的opencv
 
-# NanoAI_NCNN is always package-installable. Examples are optional.
+# NanoAI_NCNN 支持安装与可选打包，示例可选。
 NANOAI_NCNN_BUILD_EXAMPLES="OFF"
 NANOAI_NCNN_EXAMPLES="ALL"
+NANOAI_NCNN_ENABLE_CPACK="OFF"
+
+ENABLE_INSTALL="ON"
+INSTALL_PREFIX="/usr/local"
 
 BUILD_DIR="${SCRIPT_DIR}/build_linux_external"
 JOBS="$(nproc 2>/dev/null || echo 4)"
@@ -39,30 +42,40 @@ detect_nanoaiflow_cmake_dir() {
 
 print_help() {
   cat <<EOF
+
 Usage: $(basename "$0") [OPTIONS]
 
-Build NanoAI_NCNN Linux x86_64 external dependencies and project targets.
+构建 NanoAI_NCNN（含依赖探测），支持 install 与可选 CPack 打包。
 
 Options:
   -B, --build-dir <dir>    Build directory (default: ./build_linux_external)
   -j, --jobs <N>           Parallel build jobs (default: nproc)
+  --ncnn-dir <dir>         ncnn_DIR path (directory containing ncnnConfig.cmake)
+  --install-prefix <dir>   Install prefix (default: /usr/local)
+  --no-install             Build only, skip `cmake --install`
+  --enable-cpack           Enable CPack package generation
   -h, --help               Show this help message and exit.
 
 Current defaults:
   BUILD_DIR                 ${BUILD_DIR}
   JOBS                      ${JOBS}
+  ENABLE_INSTALL            ${ENABLE_INSTALL}
+  INSTALL_PREFIX            ${INSTALL_PREFIX}
   NANOAI_NCNN_BUILD_EXAMPLES ${NANOAI_NCNN_BUILD_EXAMPLES}
   NANOAI_NCNN_EXAMPLES      ${NANOAI_NCNN_EXAMPLES}
+  NANOAI_NCNN_ENABLE_CPACK  ${NANOAI_NCNN_ENABLE_CPACK}
   TOOLCHAIN_FILE            ${TOOLCHAIN_FILE}
-  NCNN_INCLUDE_DIR          ${NCNN_INCLUDE_DIR}
-  NCNN_LIBRARY_DIR          ${NCNN_LIBRARY_DIR}
-  NANOAI_NCNN_OPENCV_DIR    ${NANOAI_NCNN_OPENCV_DIR}
+  NCNN_CMAKE_DIR            ${NCNN_CMAKE_DIR}
+  OPENCV_CMAKE_DIR          ${OPENCV_CMAKE_DIR}
 
 Examples:
-  ./external_deps_linux_build.sh
-  ./external_deps_linux_build.sh -B ./build_linux_custom
-  ./external_deps_linux_build.sh -j 8
-  ./external_deps_linux_build.sh -B ./build_linux_custom -j 8
+  ./external_deps_linux_x86_64_build.sh
+  ./external_deps_linux_x86_64_build.sh -B ./build_linux_custom
+  ./external_deps_linux_x86_64_build.sh -j 8
+  ./external_deps_linux_x86_64_build.sh --ncnn-dir /path/to/ncnn/lib/cmake/ncnn
+  ./external_deps_linux_x86_64_build.sh --install-prefix /opt/nanoai_ncnn
+  ./external_deps_linux_x86_64_build.sh --enable-cpack
+  ./external_deps_linux_x86_64_build.sh --no-install
 EOF
 }
 
@@ -76,6 +89,22 @@ while [[ $# -gt 0 ]]; do
       JOBS="${2:?Missing value for $1}"
       shift 2
       ;;
+    --ncnn-dir)
+      NCNN_CMAKE_DIR="${2:?Missing value for $1}"
+      shift 2
+      ;;
+    --install-prefix)
+      INSTALL_PREFIX="${2:?Missing value for $1}"
+      shift 2
+      ;;
+    --no-install)
+      ENABLE_INSTALL="OFF"
+      shift
+      ;;
+    --enable-cpack)
+      NANOAI_NCNN_ENABLE_CPACK="ON"
+      shift
+      ;;
     -h|--help)
       print_help
       exit 0
@@ -88,7 +117,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Ensure NanoAIFlow package is available for find_package(NanoAIFlow).
+# 确保 NanoAIFlow 可被 find_package(NanoAIFlow) 检测到。
 if ! detect_nanoaiflow_cmake_dir; then
   echo "[INFO] NanoAIFlow package config not found in common system paths."
   echo "[INFO] Trying to build/install NanoAIFlow automatically..."
@@ -119,15 +148,25 @@ echo "[INFO] Using NanoAIFlow_DIR=${NANOAIFLOW_CMAKE_DIR}"
 cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
   -DNANOAI_NCNN_BUILD_EXAMPLES="${NANOAI_NCNN_BUILD_EXAMPLES}" \
   -DNANOAI_NCNN_EXAMPLES="${NANOAI_NCNN_EXAMPLES}" \
+  -DNANOAI_NCNN_ENABLE_CPACK="${NANOAI_NCNN_ENABLE_CPACK}" \
   -DNANOAI_NCNN_LINUX_x86_64_PRESET=ON \
-  -DNANOAI_NCNN_NCNN_INCLUDE_DIR="${NCNN_INCLUDE_DIR}" \
-  -DNANOAI_NCNN_NCNN_LIBRARY_DIR="${NCNN_LIBRARY_DIR}" \
-  -DNANOAI_NCNN_OPENCV_DIR="${NANOAI_NCNN_OPENCV_DIR}" \
+  -Dncnn_DIR="${NCNN_CMAKE_DIR}" \
+  -DNANOAI_NCNN_NCNN_CONFIG_DIR="${NCNN_CMAKE_DIR}" \
+  -DOPENCV_CMAKE_DIR="${OPENCV_CMAKE_DIR}" \
+  -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
   -DNanoAIFlow_DIR="${NANOAIFLOW_CMAKE_DIR}"
 
 cmake --build "${BUILD_DIR}" -j"${JOBS}"
 
+if [[ "${ENABLE_INSTALL}" == "ON" ]]; then
+  echo "[INFO] Installing NanoAI_NCNN to ${INSTALL_PREFIX} ..."
+  cmake --install "${BUILD_DIR}"
+fi
+
+if [[ "${NANOAI_NCNN_ENABLE_CPACK}" == "ON" ]]; then
+  echo "[INFO] Generating packages with CPack ..."
+  cpack --config "${BUILD_DIR}/CPackConfig.cmake"
+fi
+
 echo "Done. Build output: ${BUILD_DIR}"
 
-echo "[INFO] Installing NanoAI_NCNN package..."
-cmake --install "${BUILD_DIR}"

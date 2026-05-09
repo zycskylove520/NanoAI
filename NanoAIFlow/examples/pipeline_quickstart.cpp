@@ -3,7 +3,7 @@
 // Copyright (c) NanoAI
 //
 // File: pipeline_quickstart.cpp
-// Brief: 固定管线构造与 Builder 链式构造的最小示例。
+// Brief: 编译期固定顺序模式的最小示例。
 
 #include "../include/nanoai_flow/core/pipeline.hpp"
 
@@ -59,23 +59,38 @@ public:
 
 int main()
 {
-    // 1) 直接构造固定节点管线。
+    // 1) 直接构造编译期固定模式管线。
     AddOnePipe p1;
     ToPairPipe p2;
     JoinPipe p3;
-    NanoPipeLine pipeline(8, 64, p1, p2, p3);
+    auto pipeline = make_pipeline<PipeForwardOrder::ordered>(8, 64, p1, p2, p3);
 
     const std::string out = pipeline.run(10);
     std::cout << "pipeline output: " << out << std::endl;
 
-    // 2) 使用 builder 链式构建。
-    auto pipeline2 = make_pipeline_builder(8, 64)
-                         .add_pipe(PolicyPipe<PipeExecutionPolicy::shared_pool>{})
-                         .add_pipe(PolicyPipe<PipeExecutionPolicy::dedicated_pool>{})
-                         .build();
+    // 2) 右值链式 builder：仅支持临时对象链式追加，避免左值误用拷贝路径。
+    auto pipeline_builder = make_pipeline_builder<PipeForwardOrder::ordered>(8, 64)
+                                .add_pipe(AddOnePipe{})
+                                .add_pipe(ToPairPipe{})
+                                .add_pipe(JoinPipe{})
+                                .build();
+
+    const std::string out_builder = pipeline_builder.run(10);
+    std::cout << "pipeline_builder output: " << out_builder << std::endl;
+
+    // 3) 无序模式示例。
+    auto pipeline2 = make_pipeline<PipeForwardOrder::unordered>(
+        8,
+        64,
+        PolicyPipe<PipeExecutionPolicy::shared_pool>{},
+        PolicyPipe<PipeExecutionPolicy::dedicated_pool>{});
 
     const int out2 = pipeline2.run(3);
     std::cout << "pipeline2 output: " << out2 << std::endl;
+
+    // 以下写法会在编译期报错（左值 builder 已禁用 add_pipe/build）：
+    // auto b = make_pipeline_builder<PipeForwardOrder::ordered>(8, 64);
+    // auto bad = b.add_pipe(AddOnePipe{}).build();
 
     return 0;
 }

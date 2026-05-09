@@ -71,7 +71,7 @@ LoadOnceResult test_load_once_with_concurrency()
 {
     DemoLoader loader;
     DemoInfer infer;
-    NanoPipeLine pipeline(4, 32, std::ref(loader), infer);
+    auto pipeline = make_pipeline<PipeForwardOrder::ordered>(4, 32, std::ref(loader), infer);
 
     // 并行执行大量任务，压测“仅加载一次模型”语义。
     constexpr int kJobs = 200;

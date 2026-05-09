@@ -1,8 +1,9 @@
-NanoAI_NCNN is a high-performance, installable C++ inference framework for NCNN-based edge deployment. It is always installed as a reusable CMake package (via `find_package`), and users can optionally build examples for learning and testing. All dependencies are linked via INTERFACE, and the framework is designed for stable, high-throughput deployment chains on platforms such as Linux aarch64 and Android.
+
+NanoAI_NCNN is a high-performance C++ inference framework for NCNN-based edge deployment. It is now only built as a local INTERFACE target, and users can optionally build examples for learning and testing. All dependencies are linked via INTERFACE, and the framework is designed for stable, high-throughput deployment chains on platforms such as Linux aarch64 and Android.
 
 ## Core Features
 
-1. **Always installable as a framework**: NanoAI_NCNN is always installed as a CMake package, reusable via `find_package(NanoAI_NCNN CONFIG REQUIRED)`.
+1. **INTERFACE only**: NanoAI_NCNN is now only built as a local INTERFACE target, not installable as a CMake package. Use `find_package(NanoAIFlow CONFIG REQUIRED)` for dependency.
 2. **Examples are optional**: Example programs are built only if `-DNANOAI_NCNN_BUILD_EXAMPLES=ON` is set.
 3. **INTERFACE linkage**: All dependencies (NanoAIFlow, OpenCV, NCNN, etc.) are linked via INTERFACE, making integration robust and modular.
 4. **High-throughput inference pipelines**: Built on NanoAIFlow, supports concurrent, ordered, and strongly typed inference chains.
@@ -16,21 +17,10 @@ NanoAI_NCNN is a high-performance, installable C++ inference framework for NCNN-
 - `3rdparty`: third-party dependency directory
 - `docs`: build and packaging documentation
 
-## Build & Install
 
-**NanoAI_NCNN is always installed as a framework.**
+## Build
 
-### 1. Build and install the framework only
-
-```bash
-cmake -S . -B build_pkg \
-  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DCMAKE_INSTALL_PREFIX=/your/install/prefix
-cmake --build build_pkg -j
-cmake --install build_pkg
-```
-
-### 2. Build with examples (optional)
+### 1. Build with examples (optional)
 
 ```bash
 cmake -S . -B build_example \
@@ -94,16 +84,14 @@ NanoAI_NCNN is a high-performance C++ inference component for NCNN-based edge de
 
 ## Build Modes
 
-1. `PACKAGE`
-   - Build and install a reusable package that can be consumed with `find_package`
-2. `PROJECTS`
-   - Build applications or examples under `projects/`
+
+1. `PROJECTS`
+  - Build applications or examples under `projects/`
 
 ## Key Configuration Options
 
-- `NANOAI_NCNN_BUILD_MODE`: `PACKAGE` or `PROJECTS`, default `PACKAGE`
+- `NANOAI_NCNN_BUILD_MODE`: `PROJECTS` (default)
 - `NANOAI_NCNN_PROJECTS`: active only in `PROJECTS` mode, default `ALL`
-- `NANOAI_NCNN_INSTALL_CMAKEDIR`: install directory for package config files
 - `NANOAIFLOW_ROOT`: installation prefix of NanoAIFlow
 
 Platform-related presets:
@@ -118,11 +106,12 @@ Common third-party dependency settings:
 - `NANOAI_NCNN_NCNN_INCLUDE_DIR`
 - `NANOAI_NCNN_NCNN_LIBRARY_DIR`
 - `NANOAI_NCNN_NCNN_LIBRARY`
-- `NANOAI_NCNN_OPENCV_DIR`
+- `OPENCV_CMAKE_DIR`
 
 ## Quick Start
 
-### 1. Build and install the package
+
+### 1. Build with examples (optional)
 
 Make sure NanoAIFlow can be found by one of the following:
 
@@ -131,13 +120,12 @@ Make sure NanoAIFlow can be found by one of the following:
 - `-DNanoAIFlow_DIR=/path/to/NanoAIFlow/install/lib/cmake/NanoAIFlow`
 
 ```bash
-cmake -S . -B build_pkg \
-  -DNANOAI_NCNN_BUILD_MODE=PACKAGE \
+cmake -S . -B build_example \
+  -DNANOAI_NCNN_BUILD_MODE=PROJECTS \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DCMAKE_INSTALL_PREFIX=/your/install/prefix
+  -DNANOAI_NCNN_PROJECTS=car_project
 
-cmake --build build_pkg -j
-cmake --install build_pkg
+cmake --build build_example -j
 ```
 
 ### 2. Build a selected project
@@ -178,7 +166,7 @@ cmake -S . -B build_android \
   -DNANOAI_NCNN_ANDROID_NDK_PATH=/path/to/android-ndk \
   -DNANOAI_NCNN_NCNN_INCLUDE_DIR=/path/to/ncnn/android-aarch64/install/include \
   -DNANOAI_NCNN_NCNN_LIBRARY_DIR=/path/to/ncnn/android-aarch64/install/lib \
-  -DNANOAI_NCNN_OPENCV_DIR=/path/to/OpenCV-android-sdk/sdk/native/jni \
+  -DOPENCV_CMAKE_DIR=/path/to/OpenCV-android-sdk/sdk/native/jni \
   -DNANOAI_NCNN_ANDROID_ABI=arm64-v8a \
   -DNANOAI_NCNN_ANDROID_PLATFORM=android-26 \
   -DNANOAI_NCNN_BUILD_MODE=PROJECTS \

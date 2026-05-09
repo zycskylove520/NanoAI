@@ -3,12 +3,13 @@
 [English](README.md) | 中文
 
 
-NanoAI_NCNN 是一个高性能、可安装的 NCNN 端侧推理 C++ 框架。始终以可复用 CMake 包（通过 `find_package`）的形式交付，用户可选构建 examples 进行学习和测试。所有依赖均通过 INTERFACE 链接，适合稳定高吞吐的部署链路，支持 Linux aarch64、Android 等多平台。
+
+NanoAI_NCNN 是一个高性能的 NCNN 端侧推理 C++ 框架。现仅本地 INTERFACE 构建，不再支持 install/package/export，用户可选构建 examples 进行学习和测试。所有依赖均通过 INTERFACE 链接，适合稳定高吞吐的部署链路，支持 Linux aarch64、Android 等多平台。
 
 
 ## 核心特性
 
-1. **始终作为框架安装**：NanoAI_NCNN 始终以 CMake 包安装，`find_package(NanoAI_NCNN CONFIG REQUIRED)` 复用。
+1. **仅 INTERFACE 构建**：NanoAI_NCNN 现仅本地 INTERFACE 构建，不再支持 install/package/export。依赖请用 `find_package(NanoAIFlow CONFIG REQUIRED)`。
 2. **示例可选构建**：仅在设置 `-DNANOAI_NCNN_BUILD_EXAMPLES=ON` 时构建 examples。
 3. **INTERFACE 链接**：所有依赖（NanoAIFlow、OpenCV、NCNN 等）均 INTERFACE 链接，集成健壮、模块化。
 4. **高吞吐推理流水线**：基于 NanoAIFlow，支持并发、有序、强类型推理链路。
@@ -25,11 +26,10 @@ NanoAI_NCNN 是一个高性能、可安装的 NCNN 端侧推理 C++ 框架。始
 - `docs`：构建与打包文档
 
 
-## 构建与安装
 
-**NanoAI_NCNN 始终作为框架安装。**
+## 构建
 
-### 1. 仅构建并安装框架
+### 1. 可选构建示例
 
 确保能找到 NanoAIFlow，可用：
 - `-DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install`
@@ -37,19 +37,9 @@ NanoAI_NCNN 是一个高性能、可安装的 NCNN 端侧推理 C++ 框架。始
 - `-DNanoAIFlow_DIR=/path/to/NanoAIFlow/install/lib/cmake/NanoAIFlow`
 
 ```bash
-cmake -S . -B build_pkg \
-  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DCMAKE_INSTALL_PREFIX=/your/install/prefix
-cmake --build build_pkg -j
-cmake --install build_pkg
-```
-
-### 2. 可选构建示例
-
-```bash
 cmake -S . -B build_example \
-  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install \
-  -DNANOAI_NCNN_BUILD_EXAMPLES=ON
+  -DNANOAI_NCNN_BUILD_EXAMPLES=ON \
+  -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install
 cmake --build build_example -j
 ```
 
@@ -65,7 +55,7 @@ cmake --build build_example -j
 - `NANOAI_NCNN_NCNN_INCLUDE_DIR`
 - `NANOAI_NCNN_NCNN_LIBRARY_DIR`
 - `NANOAI_NCNN_NCNN_LIBRARY`
-- `NANOAI_NCNN_OPENCV_DIR`
+- `OPENCV_CMAKE_DIR`
 
 
 ### 4. Linux aarch64/Android 交叉编译
@@ -83,7 +73,7 @@ cmake -S . -B build_android \
   -DNANOAI_NCNN_ANDROID_NDK_PATH=/path/to/android-ndk \
   -DNANOAI_NCNN_NCNN_INCLUDE_DIR=/path/to/ncnn/android-aarch64/install/include \
   -DNANOAI_NCNN_NCNN_LIBRARY_DIR=/path/to/ncnn/android-aarch64/install/lib \
-  -DNANOAI_NCNN_OPENCV_DIR=/path/to/OpenCV-android-sdk/sdk/native/jni \
+  -DOPENCV_CMAKE_DIR=/path/to/OpenCV-android-sdk/sdk/native/jni \
   -DNANOAI_NCNN_ANDROID_ABI=arm64-v8a \
   -DNANOAI_NCNN_ANDROID_PLATFORM=android-26 \
   -DNANOAIFLOW_ROOT=/path/to/NanoAIFlow/install

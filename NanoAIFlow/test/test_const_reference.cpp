@@ -70,7 +70,7 @@ ConstReferenceResult test_const_reference_input()
     // 预期链路: (4 + 6) + 5 = 15，且源对象保持不变。
     SumByConstRefPipe sum;
     PlusPipe plus;
-    NanoPipeLine pipeline(4, 16, sum, plus);
+    auto pipeline = make_pipeline<PipeForwardOrder::ordered>(4, 16, sum, plus);
 
     const Sample s{4, 6};
 

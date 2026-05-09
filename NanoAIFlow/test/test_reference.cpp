@@ -61,7 +61,7 @@ ReferenceResult test_reference_input()
     // 同时校验外部变量确实被引用语义修改为 12。
     IncrementByRefPipe inc;
     MinusPipe minus;
-    NanoPipeLine pipeline(4, 16, inc, minus);
+    auto pipeline = make_pipeline<PipeForwardOrder::ordered>(4, 16, inc, minus);
 
     int x = 10;
     ReferenceResult result;
