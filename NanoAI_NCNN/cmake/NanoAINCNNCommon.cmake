@@ -1,3 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) NanoAI
+#
+# File: NanoAINCNNCommon.cmake
+# Brief: CMake script for NanoAI module build, dependency wiring, and install behavior.
+#
+# Notes:
+# - Keep platform/toolchain assumptions explicit in comments when modifying this file.
+# - Keep third-party dependency comments aligned with version/source changes.
+
 include_guard(GLOBAL)
 
 function(nanoai_setup_global_options)

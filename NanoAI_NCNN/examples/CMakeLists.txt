@@ -1,3 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) NanoAI
+#
+# File: CMakeLists.txt
+# Brief: CMake script for NanoAI module build, dependency wiring, and install behavior.
+#
+# Notes:
+# - Keep platform/toolchain assumptions explicit in comments when modifying this file.
+# - Keep third-party dependency comments aligned with version/source changes.
+
 # Aggregated examples entry.
 
 file(GLOB _NANOAI_NCNN_EXAMPLE_CMAKES RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*/CMakeLists.txt")

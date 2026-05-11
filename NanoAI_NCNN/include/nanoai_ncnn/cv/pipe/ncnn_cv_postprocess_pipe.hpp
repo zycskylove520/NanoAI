@@ -218,104 +218,19 @@ namespace NanoAI_NCNN::CV
             num_candidates = 0;
             yolo_features.clear();
 
-            if (output.dims == 2)
-            {
-                if (output.h == feature_dim && output.w > 0)
-                {
-                    num_candidates = output.w;
-                    yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
-                    for (int f = 0; f < feature_dim; ++f)
-                    {
-                        const float *row = output.row(f);
-                        std::copy(row, row + num_candidates, yolo_features.begin() + static_cast<std::size_t>(f * num_candidates));
-                    }
-                    return true;
-                }
-
-                if (output.w == feature_dim && output.h > 0)
-                {
-                    num_candidates = output.h;
-                    yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
-                    for (int i = 0; i < num_candidates; ++i)
-                    {
-                        const float *det = output.row(i);
-                        for (int f = 0; f < feature_dim; ++f)
-                        {
-                            yolo_features[static_cast<std::size_t>(f * num_candidates + i)] = det[f];
-                        }
-                    }
-                    return true;
-                }
-
-                return false;
-            }
-
-            if (output.dims != 3)
+            if (output.dims != 2 || output.h != feature_dim || output.w <= 0)
             {
                 return false;
             }
 
-            if (output.c == feature_dim && output.h > 0 && output.w > 0)
+            num_candidates = output.w;
+            yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
+            for (int f = 0; f < feature_dim; ++f)
             {
-                num_candidates = output.h * output.w;
-                yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
-                for (int f = 0; f < feature_dim; ++f)
-                {
-                    const ncnn::Mat channel_mat = output.channel(f);
-                    for (int y = 0; y < channel_mat.h; ++y)
-                    {
-                        const float *row = channel_mat.row(y);
-                        for (int x = 0; x < channel_mat.w; ++x)
-                        {
-                            const int i = y * channel_mat.w + x;
-                            yolo_features[static_cast<std::size_t>(f * num_candidates + i)] = row[x];
-                        }
-                    }
-                }
-                return true;
+                const float *row = output.row(f);
+                std::copy(row, row + num_candidates, yolo_features.begin() + static_cast<std::size_t>(f * num_candidates));
             }
-
-            if (output.h == feature_dim && output.c > 0 && output.w > 0)
-            {
-                num_candidates = output.c * output.w;
-                yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
-                for (int c = 0; c < output.c; ++c)
-                {
-                    const ncnn::Mat channel_mat = output.channel(c);
-                    for (int f = 0; f < feature_dim; ++f)
-                    {
-                        const float *row = channel_mat.row(f);
-                        for (int x = 0; x < channel_mat.w; ++x)
-                        {
-                            const int i = c * channel_mat.w + x;
-                            yolo_features[static_cast<std::size_t>(f * num_candidates + i)] = row[x];
-                        }
-                    }
-                }
-                return true;
-            }
-
-            if (output.w == feature_dim && output.c > 0 && output.h > 0)
-            {
-                num_candidates = output.c * output.h;
-                yolo_features.assign(static_cast<std::size_t>(feature_dim * num_candidates), 0.0F);
-                for (int c = 0; c < output.c; ++c)
-                {
-                    const ncnn::Mat channel_mat = output.channel(c);
-                    for (int y = 0; y < channel_mat.h; ++y)
-                    {
-                        const float *row = channel_mat.row(y);
-                        const int i = c * channel_mat.h + y;
-                        for (int f = 0; f < feature_dim; ++f)
-                        {
-                            yolo_features[static_cast<std::size_t>(f * num_candidates + i)] = row[f];
-                        }
-                    }
-                }
-                return true;
-            }
-
-            return false;
+            return true;
         }
 
         static NcnnCvYolo11Detection de_letterbox_detection(const NcnnCvYolo11Detection &in_box, const NcnnCvPadRatio &pr)
@@ -441,42 +356,6 @@ namespace NanoAI_NCNN::CV
                     det.score = best_score;
                     det.class_id = best_class_id;
                     det.class_name = class_name_from_index(best_class_id, options_.class_names);
-                    det = de_letterbox_detection(det, result.pr);
-
-                    if (det.x2 <= det.x1 || det.y2 <= det.y1)
-                    {
-                        continue;
-                    }
-
-                    detections.push_back(std::move(det));
-                }
-            }
-            else if (result.output.w >= 6)
-            {
-                const int num_detections = result.output.h;
-                detections.reserve(static_cast<std::size_t>(num_detections));
-                for (int i = 0; i < num_detections; ++i)
-                {
-                    const float *row = result.output.row(i);
-                    if (!row)
-                    {
-                        continue;
-                    }
-
-                    const float score = row[4];
-                    if (score < options_.conf_threshold)
-                    {
-                        continue;
-                    }
-
-                    NcnnCvYolo11Detection det;
-                    det.x1 = row[0];
-                    det.y1 = row[1];
-                    det.x2 = row[2];
-                    det.y2 = row[3];
-                    det.score = score;
-                    det.class_id = static_cast<int>(row[5]);
-                    det.class_name = class_name_from_index(det.class_id, options_.class_names);
                     det = de_letterbox_detection(det, result.pr);
 
                     if (det.x2 <= det.x1 || det.y2 <= det.y1)
