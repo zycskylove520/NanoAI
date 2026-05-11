@@ -27,6 +27,40 @@ using namespace NanoAI_FLOW;
 namespace
 {
 
+// 线程池相关性能测试的进程内超时保护（秒）。
+// 该保护用于“直接运行测试可执行文件”场景，与 CTest TIMEOUT 互补。
+constexpr std::chrono::seconds kPoolPerfTimeout{60};
+
+template <typename Fn>
+int run_with_timeout(const char *case_name, std::chrono::seconds timeout, Fn &&fn)
+{
+    std::atomic<bool> done{false};
+    int exit_code = 1;
+
+    std::thread worker([&]() {
+        exit_code = fn();
+        done.store(true, std::memory_order_release);
+    });
+
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (!done.load(std::memory_order_acquire))
+    {
+        if (std::chrono::steady_clock::now() >= deadline)
+        {
+            std::cout << "[TIMEOUT] " << case_name
+                      << " exceeded " << timeout.count() << " seconds"
+                      << " (possible deadlock or infinite wait)"
+                      << '\n';
+            worker.detach();
+            return 1;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    worker.join();
+    return exit_code;
+}
+
 /// 确定性 CPU 密集核函数，便于不同策略间可比性测试。
 inline int cpu_spin_mix(int x)
 {
@@ -221,8 +255,9 @@ bool test_pool_performance_and_correctness()
     print_result(mode_ordered);
     print_result(mode_unordered);
 
+    // 防回归：本用例只把“输出正确性”作为通过条件，不绑定机器相关的性能阈值。
     const int pass_cases = static_cast<int>(shared.output_ok) + static_cast<int>(dedicated.output_ok) + static_cast<int>(mixed.output_ok) +
-                                                     static_cast<int>(mode_ordered.output_ok) + static_cast<int>(mode_unordered.output_ok);
+                           static_cast<int>(mode_ordered.output_ok) + static_cast<int>(mode_unordered.output_ok);
     std::cout << "[RESULT] pool_performance"
               << " pass_cases=" << pass_cases
                         << "/5"
@@ -230,8 +265,8 @@ bool test_pool_performance_and_correctness()
               << " submit_threads=" << submit_threads
               << '\n';
 
-    return shared.output_ok && dedicated.output_ok && mixed.output_ok &&
-                     mode_ordered.output_ok && mode_unordered.output_ok;
+        return shared.output_ok && dedicated.output_ok && mixed.output_ok &&
+            mode_ordered.output_ok && mode_unordered.output_ok;
 }
 
 } // namespace
@@ -240,7 +275,12 @@ int main()
 {
     // CI/CTest 返回码约定：
     // 0 表示通过，非 0 表示失败。
-    const bool ok = test_pool_performance_and_correctness();
-    std::cout << "[TEST] pool_performance=" << (ok ? "PASS" : "FAIL") << '\n';
-    return ok ? 0 : 1;
+    return run_with_timeout(
+        "pool_performance",
+        kPoolPerfTimeout,
+        []() {
+            const bool ok = test_pool_performance_and_correctness();
+            std::cout << "[TEST] pool_performance=" << (ok ? "PASS" : "FAIL") << '\n';
+            return ok ? 0 : 1;
+        });
 }

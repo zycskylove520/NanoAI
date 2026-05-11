@@ -1,14 +1,32 @@
+## SPDX-License-Identifier: Apache-2.0
+##
+## File: NanoAIFlowConfig.cmake.in
+## Brief: 安装后由 find_package(NanoAIFlow CONFIG) 加载的包配置模板。
+##
+## 该文件职责：
+## - 导入导出目标 NanoAIFlowTargets.cmake；
+## - 声明消费端依赖（Threads）；
+## - 提供 legacy 变量兼容层，降低旧工程迁移成本。
+
 @PACKAGE_INIT@
 
+# CMake 依赖查找辅助宏。
 include(CMakeFindDependencyMacro)
+
+# NanoAIFlow 并发实现依赖标准线程库。
 find_dependency(Threads)
 
+# 导入安装时导出的目标定义。
 include("${CMAKE_CURRENT_LIST_DIR}/NanoAIFlowTargets.cmake")
 
 # Compatibility variables for consumers using legacy *_INCLUDE_DIRS / *_LIBRARIES.
+# 兼容旧式变量风格：
+# - NanoAIFlow_INCLUDE_DIR(S)
+# - NanoAIFlow_LIBRARY / NanoAIFlow_LIBRARIES
 set_and_check(NanoAIFlow_INCLUDE_DIR "${PACKAGE_PREFIX_DIR}/include")
 set(NanoAIFlow_INCLUDE_DIRS "${NanoAIFlow_INCLUDE_DIR}")
 
+# 优先匹配可能存在的历史导出目标名，其次匹配当前推荐别名。
 if(TARGET NanoAI::NanoAIFlow)
     set(NanoAIFlow_LIBRARY NanoAI::NanoAIFlow)
     set(NanoAIFlow_LIBRARIES NanoAI::NanoAIFlow)
@@ -17,6 +35,7 @@ elseif(TARGET NanoAI::Flow)
     set(NanoAIFlow_LIBRARIES NanoAI::Flow)
 endif()
 
+# 为兼容历史调用方，必要时补一个 NanoAI::Flow 别名。
 if(TARGET NanoAI::NanoAIFlow AND NOT TARGET NanoAI::Flow)
     add_library(NanoAI::Flow ALIAS NanoAI::NanoAIFlow)
 endif()

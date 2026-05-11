@@ -7,7 +7,11 @@
 
 #include <nanoai_flow/nanoai_flow.hpp>
 
+#include <chrono>
 #include <iostream>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
 
 using namespace NanoAI_FLOW;
 
@@ -46,10 +50,23 @@ struct BasicChainResult
     int expected{0};
     /// 实际输出。
     int actual{0};
+    /// 拷贝构造后输出。
+    int copied_actual{0};
+    /// 移动构造后输出。
+    int moved_actual{0};
+    /// 编译期拷贝构造能力。
+    bool copy_constructible{false};
+    /// 编译期移动构造能力。
+    bool move_constructible{false};
+    /// 超时关闭是否在期限内完成。
+    bool shutdown_for_ok{false};
+    /// 关闭后是否正确拒绝新任务。
+    bool rejects_after_shutdown{false};
 
     bool ok() const
     {
-        return actual == expected;
+        return actual == expected && copied_actual == expected && moved_actual == expected &&
+               copy_constructible && move_constructible && shutdown_for_ok && rejects_after_shutdown;
     }
 };
 
@@ -64,6 +81,29 @@ BasicChainResult test_basic_chain()
     result.input = 5;
     result.expected = 12;
     result.actual = pipeline.run(result.input);
+
+    using PipelineT = decltype(pipeline);
+    result.copy_constructible = std::is_copy_constructible_v<PipelineT>;
+    result.move_constructible = std::is_move_constructible_v<PipelineT>;
+
+    auto copied_pipeline = pipeline;
+    result.copied_actual = copied_pipeline.run(result.input);
+
+    auto moved_pipeline = std::move(copied_pipeline);
+    result.moved_actual = moved_pipeline.run(result.input);
+
+    result.shutdown_for_ok = moved_pipeline.shutdown_for(std::chrono::milliseconds(200));
+
+    try
+    {
+        (void)moved_pipeline.run(result.input);
+        result.rejects_after_shutdown = false;
+    }
+    catch (const std::runtime_error &)
+    {
+        result.rejects_after_shutdown = true;
+    }
+
     return result;
 }
 
@@ -80,6 +120,12 @@ int main()
               << " input=" << result.input
               << " expected=" << result.expected
               << " actual=" << result.actual
+              << " copied_actual=" << result.copied_actual
+              << " moved_actual=" << result.moved_actual
+              << " copy_constructible=" << (result.copy_constructible ? "YES" : "NO")
+              << " move_constructible=" << (result.move_constructible ? "YES" : "NO")
+              << " shutdown_for_ok=" << (result.shutdown_for_ok ? "YES" : "NO")
+              << " rejects_after_shutdown=" << (result.rejects_after_shutdown ? "YES" : "NO")
               << '\n';
     std::cout << "[TEST] basic_chain=" << (ok ? "PASS" : "FAIL") << '\n';
     return ok ? 0 : 1;

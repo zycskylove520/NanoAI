@@ -16,6 +16,10 @@
   - `dedicated_pool`：为该阶段使用独立线程池。
   - `inline_run`：调用线程内直接执行。
 
+补充说明：
+- 当前共享/专用线程运行时由 `core/thread_pool.hpp` 提供，基于 C++20 标准并发原语实现。
+- 运行时不依赖第三方线程池头文件或外部线程库。
+
 ## 2. 定义一个 Pipe
 
 ```cpp
@@ -132,6 +136,7 @@ public:
 - `MaxConcurrency` 控制阶段最大并发。
 - `dedicated_pool` 下可通过 `DedicatedPoolSize` 指定独立池大小。
 - `global_task_quota` 控制整个管线并发任务上限。
+- 当前版本的共享/专用线程池都支持 move-only 任务封装，适合流水线内部异步链式调度。
 
 ## 6. 常见误区
 
@@ -148,8 +153,126 @@ public:
 3. 误区：运行时频繁改管线结构。
    - 说明：当前模型强调编译期固定结构，适合稳定数据流。
 
-## 7. 参考文件
+## 7. 管线对象的值语义
+
+- 当前版本 `NanoPipeLine` 支持拷贝构造与移动构造。
+- 拷贝/移动后会创建独立的运行时调度状态（包括共享线程池与阶段状态），不会与原对象共享任务队列。
+
+示例：
+
+```cpp
+auto p = make_pipeline<PipeForwardOrder::ordered>(8, 64, AddOnePipe{}, MulPipe{});
+auto p_copy = p;
+auto p_moved = std::move(p_copy);
+
+int out = p_moved.run(10);
+```
+
+## 8. 参考文件
 
 - `core/pipe.hpp`
 - `core/pipeline.hpp`
 - `examples/pipeline_quickstart.cpp`
+
+## 9. 阶段 B/C 新增能力（背压与可观测）
+
+当前版本在 `NanoPipeLineOptions` 中新增了运行时治理配置：
+
+- 共享池背压：
+    - `shared_pool_queue_capacity`
+    - `shared_pool_submit_policy`（`block` / `timeout` / `reject`）
+    - `shared_pool_submit_timeout_ms`
+- 专用池背压：
+    - `dedicated_pool_queue_capacity`
+    - `dedicated_pool_submit_policy`
+    - `dedicated_pool_submit_timeout_ms`
+- ordered 防护：
+    - `ordered_waiters_limit`（防止 waiters 无上限增长）
+    - `ordered_dispatch_budget`（分片调度预算，降低单次长占用）
+- 运行时超时：
+    - `run_timeout_ms`
+- 事件回调：
+    - `event_callback(const char* event_name, nanoai_u64 seq)`
+
+可通过 `pipeline.stats()` 获取观测数据，包含：
+
+- `run_submitted` / `run_completed`
+- `run_rejected` / `run_timeout`
+- `dispatch_rejected`
+- `ordered_waiter_overflow`
+- `in_flight_tasks`
+- `next_sequence`
+
+示例：
+
+```cpp
+NanoPipeLineOptions opts{};
+opts.shared_pool_size = 8;
+opts.global_task_quota = 128;
+opts.shared_pool_queue_capacity = 512;
+opts.shared_pool_submit_policy = ThreadPoolSubmitPolicy::timeout;
+opts.shared_pool_submit_timeout_ms = 50;
+opts.ordered_waiters_limit = 1024;
+opts.run_timeout_ms = 2000;
+opts.event_callback = [](const char* name, nanoai_u64 seq) {
+        // 这里可接入日志、监控或 tracing 系统
+};
+
+auto p = make_pipeline<PipeForwardOrder::ordered>(opts, AddOnePipe{}, MulPipe{});
+auto out = p.run(10);
+auto s = p.stats();
+```
+
+## 10. 协作式取消与超时中断（阶段D）
+
+### 10.1 协作式取消信号
+
+- 所有 pipeline 支持传入 `NanoCancelToken`，用于外部取消任务。
+- pipe 的 `on_run` 可选声明 `NanoCancelToken` 参数，框架会自动传递。
+- 任务内部可定期检测 `cancel_token.is_cancelled()`，主动 return/throw。
+- 协作式取消不会强制杀死线程，最终退出时机取决于任务何时检查取消信号。
+
+### 10.2 用法示例
+
+```cpp
+#include "core/pipeline.hpp"
+
+class CancellablePipe : public NanoAI_FLOW::NanoPipe<CancellablePipe>
+{
+public:
+    int on_run(int x, const NanoCancelToken& cancel_token)
+    {
+        for (int i = 0; i < 100; ++i) {
+            if (cancel_token.is_cancelled())
+                throw std::runtime_error("cancelled");
+            // ...执行部分工作...
+        }
+        return x + 1;
+    }
+};
+
+NanoAI_FLOW::NanoPipeLineOptions opts;
+CancellablePipe p;
+auto pipeline = NanoAI_FLOW::make_pipeline<NanoAI_FLOW::PipeForwardOrder::ordered>(opts, p);
+NanoCancelToken token;
+// 另线程可调用 token.request_cancel();
+try {
+    pipeline.run_with_cancel(token, 42);
+} catch (const std::exception& e) {
+    // 捕获取消异常
+}
+```
+
+### 10.3 超时中断
+
+- pipeline 支持 run_timeout_ms，超时后自动抛出异常。
+- 可结合 cancel_token 实现更细粒度的中断。
+
+### 10.4 全局取消
+
+- pipeline.shutdown() 或 request_cancel_all() 会全局发出取消信号。
+- 所有在途任务收到信号后应协作退出；如任务不检查 token，则可能继续到自然完成。
+
+### 10.5 注释规范
+
+- 所有新增接口、参数、关键逻辑均严格遵循 comment_guidelines.md 注释要求。

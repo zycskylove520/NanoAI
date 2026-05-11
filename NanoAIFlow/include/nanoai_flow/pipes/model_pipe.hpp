@@ -26,6 +26,11 @@ namespace NanoAI_FLOW
  *
  * 首次请求触发 Derived::load_model(...)。
  * 成功后后续请求不再重复加载，直接透传输入。
+ *
+ * 线程安全语义：
+ * - 内部用互斥锁保护 loaded_ 与一次性加载过程，避免并发重复加载。
+ * 生命周期语义：
+ * - 允许 reset_model_loaded() 触发下一次请求重新加载。
  */
 template <
     typename Derived,
@@ -36,6 +41,7 @@ class LoadModelPipe : public NanoPipe<Derived, NumThreads, Policy, DedicatedPool
 {
 public:
     /// 查询模型是否已加载。
+    /// 并发：内部加锁读取 loaded_。
     bool is_model_loaded() const noexcept
     {
         std::lock_guard lock(load_state_mtx_);
@@ -43,6 +49,7 @@ public:
     }
 
     /// 重置加载状态，下一次调用将重新加载模型。
+    /// 并发：内部加锁写入 loaded_。
     void reset_model_loaded() noexcept
     {
         std::lock_guard lock(load_state_mtx_);
@@ -50,6 +57,7 @@ public:
     }
 
     /// 确保模型已加载，同时保持输入原样透传。
+    /// 返回：保持输入值类别（左值/右值）不变。
     template <typename T>
     decltype(auto) on_run(T &&input)
     {
@@ -67,6 +75,7 @@ public:
 
 private:
     /// 线程安全的一次性加载路径。
+    /// 异常语义：load_model 返回非 0 时抛 runtime_error。
     template <typename T>
     void ensure_model_loaded(const T &input) const
     {
@@ -96,6 +105,9 @@ private:
  * @tparam NumThreads 阶段并发度配置。
  * @tparam Policy 阶段执行策略。
  * @tparam DedicatedPoolSize 专用线程池大小（仅 dedicated_pool 生效）。
+ *
+ * 线程安全语义：
+ * - 本适配器不持有共享状态，线程安全由派生 infer(...) 保证。
  */
 template <
     typename Derived,

@@ -29,6 +29,12 @@ NanoAI 关注的不是“动态拼装任意节点”，而是：
 - `dedicated_pool`：关键阶段隔离资源，避免互相干扰。
 - `inline_run`：轻量任务零调度开销。
 
+### 2.4 原生运行时优先
+
+- 当前实现不再依赖第三方线程池库。
+- 运行时调度基于 C++20 标准并发原语实现，降低外部兼容性与可维护性风险。
+- `NanoPipeLine` 支持拷贝构造与移动构造，运行时状态在新对象中独立重建。
+
 ## 3. 一次 run 的路径
 
 1. 调用 `pipeline.run(...)` 分配序号 `seq`。
@@ -67,9 +73,11 @@ NanoAI 关注的不是“动态拼装任意节点”，而是：
 2. 重阶段（耗时）提高并发，轻阶段降低并发，减少争用。
 3. 优先用右值链式 `make_pipeline_builder<...>(...).add_pipe(...).build()` 构建长链；左值 builder 接口已禁用以避免误用。
 4. 在基准测试中同时关注吞吐、尾延时和顺序一致性。
+5. 调整线程运行时前先建立独立微基准，避免看似“更高级”的调度结构带来病态退化。
 
 ## 8. 对应代码
 
 - `core/pipe.hpp`
 - `core/pipeline.hpp`
-- `main.cpp`
+- `core/thread_pool.hpp`
+- `examples/pipeline_quickstart.cpp`

@@ -70,6 +70,11 @@ cmake -S NanoAI_NCNN -B out/build/ncnn-local \
 2. 保持模块独立可用，不破坏单模块构建方式。
 3. 文档示例使用通用占位路径，例如 /path/to/xxx。
 4. 修改构建逻辑时，更新对应 README 或 docs。
+5. 修改核心代码或 CMake 时，按通用注释规范补齐文件级、类型级、函数级与关键代码段注释。
+
+注释规范文档：
+
+- [通用注释规范](docs/comment_guidelines.md)
 
 ## Pull Request 要求
 

@@ -10,6 +10,8 @@ NanoAI is a multi-module C++ repository for high-performance inference and data 
 
 ### NanoAIFlow
 - High-performance, header-only concurrent pipeline framework for inference/data processing
+- Current runtime is implemented with C++20 standard concurrency primitives, with no third-party thread-pool dependency
+- `NanoPipeLine` supports copy and move construction for value-style pipeline usage
 - Always installed as a CMake package, examples are optional (`-DNANOAIFLOW_BUILD_EXAMPLES=ON`)
 - All dependencies INTERFACE linked
 - See [NanoAIFlow/README.md](NanoAIFlow/README.md) and [NanoAIFlow/README_zh.md](NanoAIFlow/README_zh.md)
@@ -59,12 +61,12 @@ cmake --build --preset rknn-package
 
 ## Documentation
 
+- [General Comment Guidelines](docs/comment_guidelines.md)
 - [NanoAIFlow English README](NanoAIFlow/README.md)
 - [NanoAIFlow Chinese README](NanoAIFlow/README_zh.md)
 - [NanoAI_RKNN English README](NanoAI_RKNN/README.md)
 - [NanoAI_RKNN Chinese README](NanoAI_RKNN/README_zh.md)
 - [NanoAI_NCNN English README](NanoAI_NCNN/README.md)
-- [NanoAI_NCNN Chinese README](NanoAI_NCNN/README_zh.md)
 - [NanoAI_NCNN Chinese README](NanoAI_NCNN/README_zh.md)
 
 ## License

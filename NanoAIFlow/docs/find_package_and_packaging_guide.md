@@ -1,7 +1,7 @@
 
 # NanoAIFlow 安装、find_package 与打包指南
 
-本指南说明如何始终将 NanoAIFlow 安装为可复用 CMake 包，并在第三方项目中通过 find_package 引入。examples 可选构建，主库始终 install。
+本指南说明如何始终将 NanoAIFlow 安装为可复用 CMake 包，并在第三方项目中通过 find_package 引入。examples 可选构建，主库始终 install。当前版本安装产物仅包含 NanoAIFlow 自有头文件与 CMake 配置文件，不再携带第三方线程池头文件。
 
 ## 1. 安装 NanoAIFlow（始终 install 框架）
 
@@ -21,6 +21,10 @@
 - 头文件目录：/opt/nanoaiflow/include
 - CMake 包目录：/opt/nanoaiflow/lib/cmake/NanoAIFlow
 - 配置文件：/opt/nanoaiflow/lib/cmake/NanoAIFlow/NanoAIFlowConfig.cmake
+
+线程运行时相关头文件位于：
+
+- /opt/nanoaiflow/include/nanoai_flow/core/thread_pool.hpp
 
 ## 2. 第三方项目中使用 find_package
 

@@ -17,9 +17,13 @@ NanoAIFlow is a high-performance, header-only, strongly typed concurrent pipelin
 3. **Stable ordering under high concurrency**: Forwarding between stages is always in global sequence order, ensuring deterministic output.
 4. **Strongly typed static pipelines**: Input/output types are defined by `on_run(...)`, and the pipeline type is fixed at compile time. No runtime type dispatch.
 5. **Flexible execution policies**: Choose between `shared_pool`, `dedicated_pool`, and `inline_run` for each stage.
-6. **Header-only, INTERFACE linkage**: Easy integration, no static/dynamic library required. All dependencies are INTERFACE linked.
-7. **Installable and reusable**: Always installed as a CMake package, reusable via `find_package(NanoAIFlow CONFIG REQUIRED)`.
-8. **Rich engineering tests**: Includes correctness, ordering, and performance tests; supports tuple-based fan-out and argument expansion.
+6. **Pipeline value semantics**: `NanoPipeLine` supports copy and move construction, making pass-by-value and factory returns straightforward.
+7. **C++20 standard-library threading**: Uses a native C++20 thread-pool runtime built on standard synchronization primitives, with no third-party thread-pool dependency.
+8. **Header-only, INTERFACE linkage**: Easy integration, no static/dynamic library required. All dependencies are INTERFACE linked.
+9. **Installable and reusable**: Always installed as a CMake package, reusable via `find_package(NanoAIFlow CONFIG REQUIRED)`.
+10. **Backpressure control**: Shared/dedicated pools support bounded queues and submit policies (`block`, `timeout`, `reject`) to prevent unbounded memory growth.
+11. **Observability built in**: Runtime stats and event callbacks expose rejections, timeouts, and ordered-waiter overflow for production diagnosis.
+12. **Rich engineering tests**: Includes correctness, ordering, performance, backpressure, and observability tests.
 
 ## Typical Scenarios
 
@@ -42,7 +46,7 @@ For more details, see:
 ## Repository Layout
 
 - `include`: public headers
-- `3rdparty/thread-pool`: thread pool dependency
+- `include/nanoai_flow/core/thread_pool.hpp`: native C++ thread-pool runtime
 - `examples`: optional example programs (build with `-DNANOAIFLOW_BUILD_EXAMPLES=ON`)
 - `test`: unit, concurrency, and performance tests
 - `docs`: design and usage documentation
@@ -79,6 +83,19 @@ ctest --test-dir build_test --output-on-failure
 - `NANOAIFLOW_BUILD_EXAMPLES`: build examples (optional, default `OFF`)
 - `NANOAIFLOW_BUILD_TESTS`: build tests (optional, default `OFF`)
 - `NANOAIFLOW_ENABLE_CPACK`: enable CPack packaging (optional, default `OFF`)
+
+## Performance Snapshot
+
+The current implementation was validated on the same machine used during the migration away from `BS::thread_pool`. Compared with the original third-party pool version, the current C++20 runtime improved representative benchmark throughput as follows:
+
+- `test_pool_performance/shared_pool_all`: `31746.03 -> 70796.46` QPS
+- `test_pool_performance/dedicated_pool_all`: `100000.00 -> 140350.88` QPS
+- `test_pool_performance/mixed_pool_shared_dedicated_shared`: `38834.95 -> 84210.53` QPS
+- `perf_benchmark/shared_pool_all`: `31347.96 -> 73800.74` QPS
+- `perf_benchmark/dedicated_pool_all`: `109289.62 -> 151515.15` QPS
+- `perf_benchmark/mode_unordered`: `49751.24 -> 150375.94` QPS
+
+These numbers are hardware-dependent, but they confirm that the final native runtime outperforms both the original `BS::thread_pool` integration and the first replacement prototype on the validation host.
 
 
 ## Consumer Example

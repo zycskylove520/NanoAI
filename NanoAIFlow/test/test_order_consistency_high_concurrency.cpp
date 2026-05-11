@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <mutex>
@@ -23,6 +24,39 @@ using namespace NanoAI_FLOW;
 // 2) 严格顺序控制场景下，完成顺序保持单调不降。
 namespace
 {
+
+// 线程池高并发一致性测试的进程内超时保护（秒）。
+constexpr std::chrono::seconds kOrderConsistencyTimeout{60};
+
+template <typename Fn>
+int run_with_timeout(const char *case_name, std::chrono::seconds timeout, Fn &&fn)
+{
+    std::atomic<bool> done{false};
+    int exit_code = 1;
+
+    std::thread worker([&]() {
+        exit_code = fn();
+        done.store(true, std::memory_order_release);
+    });
+
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (!done.load(std::memory_order_acquire))
+    {
+        if (std::chrono::steady_clock::now() >= deadline)
+        {
+            std::cout << "[TIMEOUT] " << case_name
+                      << " exceeded " << timeout.count() << " seconds"
+                      << " (possible deadlock or infinite wait)"
+                      << '\n';
+            worker.detach();
+            return 1;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    worker.join();
+    return exit_code;
+}
 
 /// 阶段 1：x -> x + 1。
 class AddPipe : public NanoPipe<AddPipe, 8, PipeExecutionPolicy::shared_pool>
@@ -202,43 +236,49 @@ int main()
 {
     // CI/CTest 返回码约定：
     // 0 表示通过，非 0 表示失败。
-    const auto concurrency_result = test_order_consistency_high_concurrency();
-    const auto strict_result = test_order_consistency_strict_control();
+    return run_with_timeout(
+        "order_consistency_high_concurrency",
+        kOrderConsistencyTimeout,
+        []() {
+            const auto concurrency_result = test_order_consistency_high_concurrency();
+            const auto strict_result = test_order_consistency_strict_control();
 
-    const bool ok_concurrency = concurrency_result.ok();
-    const bool ok_strict = strict_result.ok();
-    const bool ok = ok_concurrency && ok_strict;
+            const bool ok_concurrency = concurrency_result.ok();
+            const bool ok_strict = strict_result.ok();
+            // 防回归：必须同时满足“高并发结果映射正确”与“严格模式完成顺序单调”。
+            const bool ok = ok_concurrency && ok_strict;
 
-    std::cout << "[RESULT] order_consistency_high_concurrency"
-              << " jobs=" << concurrency_result.jobs
-              << " worker_count=" << concurrency_result.worker_count
-              << " mismatch_index=" << concurrency_result.mismatch_index
-              << '\n';
-    if (concurrency_result.mismatch_index >= 0)
-    {
-        std::cout << "[DETAIL] high_concurrency_mismatch"
-                  << " index=" << concurrency_result.mismatch_index
-                  << " expected=" << concurrency_result.expected_at_mismatch
-                  << " actual=" << concurrency_result.actual_at_mismatch
-                  << '\n';
-    }
+            std::cout << "[RESULT] order_consistency_high_concurrency"
+                      << " jobs=" << concurrency_result.jobs
+                      << " worker_count=" << concurrency_result.worker_count
+                      << " mismatch_index=" << concurrency_result.mismatch_index
+                      << '\n';
+            if (concurrency_result.mismatch_index >= 0)
+            {
+                std::cout << "[DETAIL] high_concurrency_mismatch"
+                          << " index=" << concurrency_result.mismatch_index
+                          << " expected=" << concurrency_result.expected_at_mismatch
+                          << " actual=" << concurrency_result.actual_at_mismatch
+                          << '\n';
+            }
 
-    std::cout << "[RESULT] order_consistency_strict_control"
-              << " jobs=" << strict_result.jobs
-              << " mismatch_index=" << strict_result.mismatch_index
-              << " monotonic=" << (strict_result.monotonic ? "YES" : "NO")
-              << '\n';
-    if (strict_result.mismatch_index >= 0)
-    {
-        std::cout << "[DETAIL] strict_control_mismatch"
-                  << " index=" << strict_result.mismatch_index
-                  << " expected=" << strict_result.expected_at_mismatch
-                  << " actual=" << strict_result.actual_at_mismatch
-                  << '\n';
-    }
+            std::cout << "[RESULT] order_consistency_strict_control"
+                      << " jobs=" << strict_result.jobs
+                      << " mismatch_index=" << strict_result.mismatch_index
+                      << " monotonic=" << (strict_result.monotonic ? "YES" : "NO")
+                      << '\n';
+            if (strict_result.mismatch_index >= 0)
+            {
+                std::cout << "[DETAIL] strict_control_mismatch"
+                          << " index=" << strict_result.mismatch_index
+                          << " expected=" << strict_result.expected_at_mismatch
+                          << " actual=" << strict_result.actual_at_mismatch
+                          << '\n';
+            }
 
-    std::cout << "[TEST] order_consistency_high_concurrency=" << (ok_concurrency ? "PASS" : "FAIL") << '\n';
-    std::cout << "[TEST] order_consistency_strict_control=" << (ok_strict ? "PASS" : "FAIL") << '\n';
-    std::cout << "[TEST] order_consistency_overall=" << (ok ? "PASS" : "FAIL") << '\n';
-    return ok ? 0 : 1;
+            std::cout << "[TEST] order_consistency_high_concurrency=" << (ok_concurrency ? "PASS" : "FAIL") << '\n';
+            std::cout << "[TEST] order_consistency_strict_control=" << (ok_strict ? "PASS" : "FAIL") << '\n';
+            std::cout << "[TEST] order_consistency_overall=" << (ok ? "PASS" : "FAIL") << '\n';
+            return ok ? 0 : 1;
+        });
 }

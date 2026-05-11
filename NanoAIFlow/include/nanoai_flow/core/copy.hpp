@@ -4,6 +4,10 @@
 //
 // File: copy.hpp
 // Brief: 提供禁止拷贝/移动语义的工具基类。
+//
+// 说明：
+// - 这些类型用于显式表达“资源所有权不可复制/不可移动”的设计意图；
+// - 相比散落在各类中的 delete 声明，继承式写法更集中、可复用。
 
 #pragma once
 
@@ -11,6 +15,8 @@ namespace NanoAI_FLOW
 {
     /**
         * @brief 禁止拷贝的混入基类。
+        *
+        * 典型用途：对象可移动但不允许复制（如持有互斥量、文件句柄等资源）。
      */
     class NoCopyable
     {
@@ -24,6 +30,8 @@ namespace NanoAI_FLOW
 
     /**
         * @brief 禁止移动的混入基类。
+        *
+        * 典型用途：对象地址必须稳定，但允许复制语义（较少见）。
      */
     class NoMoveable
     {
@@ -37,6 +45,8 @@ namespace NanoAI_FLOW
 
     /**
         * @brief 同时禁止拷贝与移动的混入基类。
+        *
+        * 典型用途：对象管理独占运行时资源，既不能复制也不能迁移。
      */
     class NoCopyMoveable
     {

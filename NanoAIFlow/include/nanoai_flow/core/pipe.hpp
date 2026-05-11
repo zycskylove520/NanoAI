@@ -4,15 +4,20 @@
 //
 // File: pipe.hpp
 // Brief: 定义基于 CRTP 的阶段基类与流水线阶段约束。
+//
+// 该文件给出“stage 接口最小契约”：
+// - 通过 PipeStage 概念约束阶段必须提供的元信息接口；
+// - 通过 NanoPipe<Derived,...> 提供统一 run() 分发与策略参数化。
 
 #pragma once
+
 
 #include <concepts>
 #include <functional>
 #include <type_traits>
 #include <utility>
-
 #include "types.h"
+#include "nanoai_flow/core/cancel_token.hpp"
 
 namespace NanoAI_FLOW
 {
@@ -73,6 +78,14 @@ concept PipeStage = requires(unwrap_reference_wrapper_t<T> &pipe)
     { pipe.dedicated_pool_size() } -> std::convertible_to<nanoai_u32>;
 };
 
+/**
+ * @brief 管线 stage 的 CRTP 基类。
+ *
+ * 设计目标：
+ * - 让每个 stage 在编译期声明并发度与执行策略；
+ * - 统一向 pipeline 暴露 run()/concurrency()/execution_policy() 接口；
+ * - 避免虚函数开销，保持零成本抽象风格。
+ */
 template <
     typename Derived,
     nanoai_u32 MaxConcurrency = 1,
@@ -109,6 +122,7 @@ public:
     /// 返回 dedicated_pool 模式下的有效线程数。
     constexpr nanoai_u32 dedicated_pool_size() const noexcept
     {
+        // 仅 dedicated_pool 策略下该值有效。
         if constexpr (Policy == PipeExecutionPolicy::dedicated_pool)
         {
             if constexpr (DedicatedPoolSize > 0)
@@ -133,6 +147,34 @@ public:
     {
         return static_cast<const Derived *>(this)->on_run(std::forward<Args>(args)...);
     }
+
+    /**
+         * @brief 支持协作式取消的 run 调度入口。
+         *
+         * 若 on_run 支持 NanoCancelToken 参数，则自动传递；否则保持兼容。
+         * @tparam Args 用户输入参数。
+         * @param cancel_token 协作式取消信号。
+         * @param args 其余参数。
+         */
+        template <typename... Args>
+        decltype(auto) run_with_cancel(const NanoCancelToken& cancel_token, Args&&... args)
+        {
+            if constexpr (requires(Derived& d, Args&&... a, const NanoCancelToken& t) { d.on_run(std::forward<Args>(a)..., t); }) {
+                return static_cast<Derived*>(this)->on_run(std::forward<Args>(args)..., cancel_token);
+            } else {
+                return static_cast<Derived*>(this)->on_run(std::forward<Args>(args)...);
+            }
+        }
+
+        template <typename... Args>
+        decltype(auto) run_with_cancel(const NanoCancelToken& cancel_token, Args&&... args) const
+        {
+            if constexpr (requires(const Derived& d, Args&&... a, const NanoCancelToken& t) { d.on_run(std::forward<Args>(a)..., t); }) {
+                return static_cast<const Derived*>(this)->on_run(std::forward<Args>(args)..., cancel_token);
+            } else {
+                return static_cast<const Derived*>(this)->on_run(std::forward<Args>(args)...);
+            }
+        }
 };
 
 } // namespace NanoAI_FLOW

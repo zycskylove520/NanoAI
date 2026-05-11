@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <utility>
 
 using namespace NanoAI_FLOW;
 
@@ -67,6 +68,12 @@ int main()
 
     const std::string out = pipeline.run(10);
     std::cout << "pipeline output: " << out << std::endl;
+
+    // 1.1) 流水线支持拷贝/移动构造，可安全按值传递。
+    auto copied_pipeline = pipeline;
+    auto moved_pipeline = std::move(copied_pipeline);
+    const std::string out_moved = moved_pipeline.run(10);
+    std::cout << "moved_pipeline output: " << out_moved << std::endl;
 
     // 2) 右值链式 builder：仅支持临时对象链式追加，避免左值误用拷贝路径。
     auto pipeline_builder = make_pipeline_builder<PipeForwardOrder::ordered>(8, 64)

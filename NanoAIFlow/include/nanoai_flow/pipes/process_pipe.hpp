@@ -19,6 +19,9 @@ namespace NanoAI_FLOW
  * @tparam NumThreads 阶段并发度配置。
  * @tparam Policy 阶段执行策略。
  * @tparam DedicatedPoolSize 专用线程池大小（仅 dedicated_pool 生效）。
+ *
+ * 线程安全语义：
+ * - 本基类不维护共享状态，线程安全由派生类 preprocess(...) 自行保证。
  */
 template <
     typename Derived,
@@ -29,6 +32,7 @@ class PreprocessPipe : public NanoPipe<Derived, NumThreads, Policy, DedicatedPoo
 {
 public:
     /// 转发到 Derived::preprocess。
+    /// 异常语义：透传派生类异常，不在此层吞掉错误。
     template <typename T>
     decltype(auto) on_run(T &&input)
     {
@@ -49,6 +53,9 @@ public:
  * @tparam NumThreads 阶段并发度配置。
  * @tparam Policy 阶段执行策略。
  * @tparam DedicatedPoolSize 专用线程池大小（仅 dedicated_pool 生效）。
+ *
+ * 线程安全语义：
+ * - 与 PreprocessPipe 相同，不维护共享状态；并发安全由派生类负责。
  */
 template <
     typename Derived,
@@ -59,6 +66,7 @@ class PostProcessPipe : public NanoPipe<Derived, NumThreads, Policy, DedicatedPo
 {
 public:
     /// 转发到 Derived::postprocess。
+    /// 异常语义：透传派生类异常，交由 pipeline 上层统一处理。
     template <typename T>
     decltype(auto) on_run(T &&input)
     {

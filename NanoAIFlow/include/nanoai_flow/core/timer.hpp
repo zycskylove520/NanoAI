@@ -4,6 +4,10 @@
 //
 // File: timer.hpp
 // Brief: 轻量栈式计时器，支持嵌套计时场景。
+//
+// 该计时器是开发辅助工具：
+// - 通过栈结构支持嵌套 tic/toc；
+// - 返回毫秒值并可选打印，便于快速 profiling。
 
 #pragma once
 
@@ -35,6 +39,8 @@ public:
         * @param msg 输出信息前缀。
         * @param flag 为 true 且 msg 非空时打印耗时。
         * @return 当前 tic/toc 对应的耗时（毫秒）。
+        *
+        * 边界行为：当未先调用 tic() 时，toc() 返回 0.0，不抛异常。
      */
     double toc(std::string msg = "", bool flag = true)
     {
