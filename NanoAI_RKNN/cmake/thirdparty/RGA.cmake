@@ -1,6 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) NanoAI
+#
+# File: RGA.cmake
+# Brief: 引入 Rockchip RGA 头文件、库目录以及其工具源码，支撑图像硬件加速路径。
+#
+# Notes:
+# - RGA 路径由外部 SDK 提供，目录结构默认匹配官方常见发布布局。
+# - 该脚本除链接 `rga` 外，还会把 utils 源码并入主目标，因此会影响库类型选择。
+
 include_guard(GLOBAL)
 
 # rga (external path required)
+# 通过 root 路径统一推导 include/lib/utils 目录，减少命令行参数数量。
 set(NANOAI_RKNN_RGA_ROOT "" CACHE PATH "RGA root directory")
 if(NOT CMAKE_CROSSCOMPILING)
     message(STATUS "Skip RGA dependency checks during native configure probe.")
@@ -22,6 +34,7 @@ list(APPEND NANOAI_RKNN_LINK_DIRS ${RGA_LIB_DIR})
 list(APPEND NANOAI_RKNN_LINK_LIBS rga)
 
 # rga utils
+# 直接把官方 utils 源码编进 NanoAI_RKNN，避免额外维护单独的工具静态库目标。
 file(GLOB_RECURSE RGA_UTILS_SRCS
     ${RGA_DIR}/utils/src/*.cpp
     ${RGA_DIR}/utils/allocator/src/*.cpp

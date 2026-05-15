@@ -45,6 +45,8 @@ NanoAI_RKNN is a high-performance C++ inference component for Rockchip RKNN edge
 2. Examples are optional
   - Enable examples under `examples/` with CMake options
 
+This split is intentional: in many RKNN cross-compilation workflows, packaging the library is the primary goal, while examples are only enabled for validation or onboarding.
+
 ## Key Configuration Options
 
 - `NANOAI_RKNN_BUILD_EXAMPLES`: `ON` or `OFF`, default `OFF`
@@ -61,6 +63,8 @@ Common third-party dependency settings:
 - `NANOAI_RKNN_STB_IMAGE_INCLUDE_DIR`
 - `NANOAI_RKNN_JPEG_TURBO_ROOT`
 - `NANOAI_RKNN_UTILS_ROOT`
+
+These paths are expected to point to target-architecture dependencies. The build intentionally avoids guessing host-installed SDK locations because that is fragile in cross-compilation environments.
 
 ## Quick Start
 
@@ -94,6 +98,8 @@ You can also use [external_deps_rknn_build.sh](external_deps_rknn_build.sh) afte
 
 ### 2. Build selected examples
 
+`NANOAI_RKNN_EXAMPLES` is the recommended selector for example subdirectories. The build also derives per-example cache toggles internally, mainly for transparency in CMake GUIs and IDEs.
+
 ```bash
 cmake -S . -B build_proj \
   -DNANOAI_RKNN_BUILD_EXAMPLES=ON \
@@ -121,6 +127,7 @@ cmake --build build_cross --target NanoAI_rknn_demo -j
 
 - `examples/test_project` should be built from this repository entry rather than configured as a standalone project
 - The current workflow primarily targets `aarch64/arm64` cross-compilation
+- Native configure runs inside an IDE may skip strict RKNN dependency checks on purpose; this is mainly to preserve code browsing and completion on developer machines
 
 ## Documentation
 

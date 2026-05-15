@@ -1,5 +1,7 @@
 # NanoAI_RKNN 构建与选项手册（中文）
 
+> 说明：本文档侧重“如何配置和打包”；与源码注释相比，它回答的是构建入口、依赖路径和示例选择策略。
+
 本文档用于说明：
 
 1. 有哪些可配置项。
@@ -15,6 +17,8 @@
 - `NANOAI_RKNN_BUILD_EXAMPLES=ON`：在上述基础上，额外构建 `examples/` 下示例。
 
 默认值：`NANOAI_RKNN_BUILD_EXAMPLES=OFF`
+
+这样设计的原因是：在交叉编译环境里，很多场景只需要产出可复用包，不希望因为示例目标额外拉起运行时依赖校验。
 
 ## 2. 顶层 CMake 主要选项
 
@@ -37,6 +41,7 @@
 - `NANOAI_RKNN_WITH_UTILS`
 
 说明：当前工程仅支持 ARM（`aarch64/arm64`）交叉编译，上述开关在构建中被强制启用。
+也就是说，这些变量当前更像“构建画像说明”，而不是完整意义上的可裁剪特性矩阵。
 
 ### 2.3 第三方路径变量（外部传入）
 
@@ -77,6 +82,7 @@ cmake --install NanoAI_RKNN/build_pkg
 ```
 
 也可使用 `NanoAI_RKNN/external_deps_rknn_build.sh`，修改脚本顶部路径变量后一键配置与构建。
+对于团队内部固定 SDK 布局场景，这种脚本方式通常更适合沉淀为统一构建入口。
 
 安装后会导出：
 
@@ -112,6 +118,8 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=/your/install/prefix
 
 - `NANOAI_ENABLE_EXAMPLE_TEST_PROJECT`
 
+这些开关主要用于展示最终解析结果；常规使用仍建议优先通过 `NANOAI_RKNN_EXAMPLES` 统一指定。
+
 ### 4.2 示例命令
 
 仅构建 `test_project` 示例：
@@ -139,6 +147,8 @@ cmake --build NanoAI_RKNN/build_proj_all -j
 
 ## 5. 交叉编译建议
 
+推荐原则：把所有与目标平台相关的参数都集中在“根配置命令”中传入，避免子目录再各自补丁式覆盖。
+
 所有交叉编译参数建议在根配置阶段传入：
 
 - `CMAKE_TOOLCHAIN_FILE`
@@ -165,6 +175,8 @@ cmake --build NanoAI_RKNN/build_cross --target NanoAI_rknn_demo -j
 
 `examples/test_project` 不支持独立配置，必须从 `NanoAI_RKNN` 根目录进入。
 
+这是为了保证示例与主库始终使用同一套 toolchain、prefix path 和第三方依赖路径。
+
 ### 6.2 示例开关说明
 
 `NANOAI_RKNN_BUILD_EXAMPLES` 仅控制是否额外构建示例，不影响包导出与安装能力。
@@ -178,3 +190,5 @@ cmake --build NanoAI_RKNN/build_cross --target NanoAI_rknn_demo -j
 3. `NANOAIFLOW_ROOT` 是否指向正确安装目录。
   也可直接传 `CMAKE_PREFIX_PATH` 或 `NanoAIFlow_DIR`。
 4. 是否使用了 `aarch64/arm64` 交叉工具链（本工程不支持非 ARM 或非交叉编译）。
+
+若 IDE 里只是为了获得代码补全而进行原生 configure，看到“跳过依赖检查”的状态输出通常是预期行为。

@@ -3,7 +3,11 @@
 // Copyright (c) NanoAI
 //
 // File: rknn_helper.hpp
-// Brief: TODO - add file summary.
+// Brief: 封装 RKNN C API 资源管理辅助函数，包括模型加载、张量元信息初始化与 DMA 资源处理。
+//
+// Design notes:
+// - 该文件直接面向 RKNN 官方 C 接口，重点隔离资源申请/释放细节，降低上层 pipe 的样板代码。
+// - 辅助函数本身不维护共享锁，默认由调用方保证上下文不会被并发初始化或并发释放。
 //
 
 #pragma once
@@ -23,6 +27,8 @@ namespace NanoAI_RKNN::Helper
      * @brief RKNN 模型推理上下文结构体
      *        管理模型句柄、输入输出属性、张量内存等所有推理相关资源
      */
+    // RKNNAIContext 聚合 RKNN 运行时句柄及其关联资源。
+    // 线程安全：无内部同步，读写必须遵守“加载完成后只读、释放前无并发访问”的约束。
     struct RKNNAIContext
     {
         rknn_context ctx_ = 0;                     // RKNN 模型上下文句柄
@@ -42,6 +48,7 @@ namespace NanoAI_RKNN::Helper
      * @brief DMA 连续内存上下文结构体
      *        用于管理物理连续的非缓存 DMA 缓冲区
      */
+    // RKNNDMAContext 持有一块物理连续 DMA 缓冲区，适合与硬件图像路径做零拷贝衔接。
     struct RKNNDMAContext
     {
         int dma_fd_ = 0;             // DMA 缓冲区文件描述符
@@ -143,6 +150,7 @@ namespace NanoAI_RKNN::Helper
             }
         }
 
+        // 将查询得到的属性复制到长期缓冲区，后续预处理/推理阶段仍需反复访问这些元数据。
         ai_ctx.input_attrs_ = (rknn_tensor_attr *)malloc(ai_ctx.io_num_.n_input * sizeof(rknn_tensor_attr));
         if (ai_ctx.input_attrs_ == nullptr)
         {
@@ -167,6 +175,7 @@ namespace NanoAI_RKNN::Helper
             DumpTensorAttr(output_attrs[i]);
         }
 
+        // 输出属性同样转存到上下文，避免每次推理后处理再次调用 rknn_query。
         ai_ctx.output_attrs_ = (rknn_tensor_attr *)malloc(ai_ctx.io_num_.n_output * sizeof(rknn_tensor_attr));
         if (ai_ctx.output_attrs_ == nullptr)
         {
@@ -202,6 +211,7 @@ namespace NanoAI_RKNN::Helper
 
         for (int i = 0; i < ai_ctx.io_num_.n_input; ++i)
         {
+            // size_with_stride 由 RKNN 运行时给出，必须原样使用以匹配底层对齐要求。
             ai_ctx.input_mems_[i] = rknn_create_mem(ai_ctx.ctx_, ai_ctx.input_attrs_[i].size_with_stride);
             ret = rknn_set_io_mem(ai_ctx.ctx_, ai_ctx.input_mems_[i], &ai_ctx.input_attrs_[i]);
             if (ret < 0)
@@ -238,6 +248,7 @@ namespace NanoAI_RKNN::Helper
 
         for (int i = 0; i < ai_ctx.io_num_.n_output; ++i)
         {
+            // 输出 zero-copy 内存提前绑定后，可避免高频输出场景反复分配临时缓冲区。
             ai_ctx.output_mems_[i] = rknn_create_mem(ai_ctx.ctx_, ai_ctx.output_attrs_[i].size_with_stride);
             ret = rknn_set_io_mem(ai_ctx.ctx_, ai_ctx.output_mems_[i], &ai_ctx.output_attrs_[i]);
             if (ret < 0)
@@ -321,7 +332,7 @@ namespace NanoAI_RKNN::Helper
             ai_ctx.output_attrs_ = nullptr;
         }
 
-        // 重置所有结构体，防止二次释放崩溃
+        // 重置所有结构体，防止调用方在异常恢复路径中二次释放同一批资源。
         ai_ctx.io_num_ = {};
         ai_ctx.model_channel_ = 0;
         ai_ctx.model_width_ = 0;
@@ -338,6 +349,7 @@ namespace NanoAI_RKNN::Helper
      */
     inline int CreateDMABuf(RKNNDMAContext &dma_ctx, int buf_size)
     {
+        // 非缓存 DMA 缓冲区适合外设共享，但 CPU 写后若接入更复杂硬件链路仍需调用方关注同步语义。
         int ret = dma_buf_alloc(DMA_HEAP_UNCACHE_PATH, buf_size, &dma_ctx.dma_fd_, (void **)&dma_ctx.dma_buf_);
         if (ret < 0 || !dma_ctx.dma_buf_)
         {

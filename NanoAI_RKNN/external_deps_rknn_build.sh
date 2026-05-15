@@ -18,6 +18,9 @@ UTILS_ROOT="${SCRIPT_DIR}/3rdparty/rknn/utils"
 BUILD_DIR="${SCRIPT_DIR}/build_external"
 NANOAI_RKNN_BUILD_EXAMPLES="ON"
 NANOAI_RKNN_EXAMPLES="ALL"
+NANOAI_RKNN_ENABLE_CPACK="OFF"
+ENABLE_INSTALL="ON"
+INSTALL_PREFIX="/usr/local"
 JOBS="$(nproc 2>/dev/null || echo 4)"
 
 NANOAIFLOW_CMAKE_DIR=""
@@ -49,13 +52,19 @@ Build NanoAI_RKNN external dependencies and project targets.
 Options:
   -B, --build-dir <dir>    Build directory (default: ./build_external)
   -j, --jobs <N>           Parallel build jobs (default: nproc)
+  --install-prefix <dir>   Install prefix (default: /usr/local)
+  --no-install             Build only, skip `cmake --install`
+  --enable-cpack           Enable CPack package generation
   -h, --help               Show this help message and exit.
 
 Current defaults:
   BUILD_DIR                   ${BUILD_DIR}
   JOBS                        ${JOBS}
+  ENABLE_INSTALL              ${ENABLE_INSTALL}
+  INSTALL_PREFIX              ${INSTALL_PREFIX}
   NANOAI_RKNN_BUILD_EXAMPLES  ${NANOAI_RKNN_BUILD_EXAMPLES}
   NANOAI_RKNN_EXAMPLES        ${NANOAI_RKNN_EXAMPLES}
+  NANOAI_RKNN_ENABLE_CPACK    ${NANOAI_RKNN_ENABLE_CPACK}
   TOOLCHAIN_FILE              ${TOOLCHAIN_FILE}
   RKNN_RUNTIME_INCLUDE_DIR    ${RKNN_RUNTIME_INCLUDE_DIR}
   RKNN_RUNTIME_LIBRARY_DIR    ${RKNN_RUNTIME_LIBRARY_DIR}
@@ -69,6 +78,9 @@ Examples:
   ./external_deps_rknn_build.sh
   ./external_deps_rknn_build.sh -B ./build_external_custom
   ./external_deps_rknn_build.sh -j 8
+  ./external_deps_rknn_build.sh --install-prefix /opt/nanoai_rknn
+  ./external_deps_rknn_build.sh --enable-cpack
+  ./external_deps_rknn_build.sh --no-install
   ./external_deps_rknn_build.sh -B ./build_external_custom -j 8
 EOF
 }
@@ -82,6 +94,18 @@ while [[ $# -gt 0 ]]; do
     -j|--jobs)
       JOBS="${2:?Missing value for $1}"
       shift 2
+      ;;
+    --install-prefix)
+      INSTALL_PREFIX="${2:?Missing value for $1}"
+      shift 2
+      ;;
+    --no-install)
+      ENABLE_INSTALL="OFF"
+      shift
+      ;;
+    --enable-cpack)
+      NANOAI_RKNN_ENABLE_CPACK="ON"
+      shift
       ;;
     -h|--help)
       print_help
@@ -126,7 +150,9 @@ echo "[INFO] Using NanoAIFlow_DIR=${NANOAIFLOW_CMAKE_DIR}"
 cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
   -DNANOAI_RKNN_BUILD_EXAMPLES="${NANOAI_RKNN_BUILD_EXAMPLES}" \
   -DNANOAI_RKNN_EXAMPLES="${NANOAI_RKNN_EXAMPLES}" \
+  -DNANOAI_RKNN_ENABLE_CPACK="${NANOAI_RKNN_ENABLE_CPACK}" \
   -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" \
+  -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
   -DNanoAIFlow_DIR="${NANOAIFLOW_CMAKE_DIR}" \
   -DNANOAI_RKNN_RUNTIME_INCLUDE_DIR="${RKNN_RUNTIME_INCLUDE_DIR}" \
   -DNANOAI_RKNN_RUNTIME_LIBRARY_DIR="${RKNN_RUNTIME_LIBRARY_DIR}" \
@@ -140,5 +166,12 @@ cmake --build "${BUILD_DIR}" -j"${JOBS}"
 
 echo "Done. Build output: ${BUILD_DIR}"
 
-echo "[INFO] Installing NanoAI_RKNN package..."
-cmake --install "${BUILD_DIR}"
+if [[ "${ENABLE_INSTALL}" == "ON" ]]; then
+  echo "[INFO] Installing NanoAI_RKNN to ${INSTALL_PREFIX} ..."
+  cmake --install "${BUILD_DIR}"
+fi
+
+if [[ "${NANOAI_RKNN_ENABLE_CPACK}" == "ON" ]]; then
+  echo "[INFO] Generating packages with CPack ..."
+  cpack --config "${BUILD_DIR}/CPackConfig.cmake"
+fi

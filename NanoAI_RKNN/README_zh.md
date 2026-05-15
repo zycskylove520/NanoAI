@@ -45,6 +45,8 @@ NanoAI_RKNN 是面向 Rockchip RKNN 端侧部署场景的高性能 C++ 推理组
 2. 示例按需构建
   - 通过 CMake 选项开启 `examples/` 下的应用或示例项目
 
+这样拆分的目的是：在很多 RKNN 交叉编译流程里，主要诉求是产出可复用库包，而示例通常只在联调、验收或新成员接入时才需要开启。
+
 ## 核心配置项
 
 - `NANOAI_RKNN_BUILD_EXAMPLES`：`ON` 或 `OFF`，默认 `OFF`
@@ -61,6 +63,8 @@ NanoAI_RKNN 是面向 Rockchip RKNN 端侧部署场景的高性能 C++ 推理组
 - `NANOAI_RKNN_STB_IMAGE_INCLUDE_DIR`
 - `NANOAI_RKNN_JPEG_TURBO_ROOT`
 - `NANOAI_RKNN_UTILS_ROOT`
+
+这些路径都应指向目标架构依赖。当前构建逻辑不会主动猜测主机环境中的 SDK 安装位置，以避免交叉编译时误用 x86 依赖。
 
 ## 快速开始
 
@@ -94,6 +98,8 @@ cmake --install build_pkg
 
 ### 2. 构建指定示例
 
+推荐优先通过 `NANOAI_RKNN_EXAMPLES` 指定示例目录。构建系统内部还会派生每个示例自己的开关，主要用于在 CMake GUI 或 IDE 中展示最终选择结果。
+
 ```bash
 cmake -S . -B build_proj \
   -DNANOAI_RKNN_BUILD_EXAMPLES=ON \
@@ -121,6 +127,7 @@ cmake --build build_cross --target NanoAI_rknn_demo -j
 
 - `examples/test_project` 需要从当前仓库入口构建，不建议独立配置
 - 当前主要面向 `aarch64/arm64` 交叉编译场景
+- 如果 IDE 只是为了代码补全而进行本机 `configure`，看到“跳过依赖检查”通常属于预期行为
 
 ## 文档导航
 

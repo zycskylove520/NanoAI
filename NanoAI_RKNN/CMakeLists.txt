@@ -1,3 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) NanoAI
+#
+# File: CMakeLists.txt
+# Brief: CMake script for NanoAI module build, dependency wiring, and install behavior.
+#
+# Notes:
+# - Keep platform/toolchain assumptions explicit in comments when modifying this file.
+# - Keep third-party dependency comments aligned with version/source changes.
+
 cmake_minimum_required(VERSION 3.16)
 
 set(NANOAI_RKNN_DEFAULT_TOOLCHAIN_FILE
@@ -23,14 +34,17 @@ nanoai_setup_global_options()
 # ======================================================
 # 构建行为
 # 始终导出/安装 NanoAI_RKNN 包；示例构建由开关控制。
+# 这里将安装能力与示例能力拆开，便于交叉编译产物在 CI 中只做打包、不拉起示例。
 # ======================================================
 option(NANOAI_RKNN_BUILD_EXAMPLES "Build examples under examples/" OFF)
 set(NANOAI_RKNN_EXAMPLES "ALL" CACHE STRING "Semicolon-separated example names under examples/ (ALL or example names)")
+option(NANOAI_RKNN_ENABLE_CPACK "Enable CPack package generation (optional)" OFF)
 
 message(STATUS "NanoAI_RKNN build examples: ${NANOAI_RKNN_BUILD_EXAMPLES}")
 message(STATUS "NanoAI_RKNN selected examples: ${NANOAI_RKNN_EXAMPLES}")
 
 # NanoAI_RKNN only supports ARM cross-compilation.
+# 本地编辑器中的原生 configure 常用于补全与语法探测，因此仅提示而不直接报错。
 if(NOT CMAKE_CROSSCOMPILING)
     message(STATUS "NanoAI_RKNN is designed for ARM cross-compilation. Native editor probe is ignored.")
 endif()
@@ -41,6 +55,8 @@ endif()
 
 # ======================================================
 # 路径与依赖前缀
+# 允许通过显式前缀把已安装的 NanoAIFlow 包注入 CMAKE_PREFIX_PATH，
+# 避免把依赖路径硬编码到仓库内。
 # ======================================================
 get_filename_component(NANOAI_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
 
@@ -53,6 +69,8 @@ set(NANOAI_RKNN_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/NanoAI_RKNN" CAC
 
 # ======================================================
 # 工程内容配置（先初始化，供 thirdparty 配置追加）
+# thirdparty 子脚本通过 list(APPEND) 填充 include、link 与 source 列表，
+# 因此这里必须先完成空列表初始化，避免缓存变量污染本次配置。
 # ======================================================
 set(NANOAI_RKNN_PUBLIC_INCLUDE_DIR ${NANOAI_PROJECT_ROOT}/include)
 set(NANOAI_RKNN_INCLUDE_DIRS ${NANOAI_RKNN_PUBLIC_INCLUDE_DIR})
@@ -62,6 +80,7 @@ set(NANOAI_RKNN_SRCS)
 
 # ======================================================
 # 依赖发现
+# 仅在交叉编译时严格查找 RKNN 相关依赖；原生探测路径保持最小依赖，方便 IDE 打开工程。
 # ======================================================
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -92,6 +111,7 @@ endforeach()
 
 # ======================================================
 # 基础链接库
+# 将平台无关的线程库与交叉编译特有系统库拆开，便于后续扩展 host-only 测试目标。
 # ======================================================
 set(NANOAI_RKNN_BASE_LIBS
     Threads::Threads
@@ -108,6 +128,8 @@ endif()
 
 # ======================================================
 # 目标定义（examples 目录外，仅头文件发布）
+# 当 thirdparty 没有追加源文件时退化为 INTERFACE 库，
+# 这样纯头文件/预编译依赖场景仍能正常导出包配置。
 # ======================================================
 if(NANOAI_RKNN_SRCS)
     add_library(NanoAI_RKNN SHARED
@@ -165,6 +187,7 @@ add_library(NanoAI_RKNN::NanoAI_RKNN ALIAS NanoAI_RKNN)
 
 # ======================================================
 # 包导出与安装（始终可用）
+# 无论是否构建示例，都导出统一的 Config/Targets，保证下游 find_package 行为稳定。
 # ======================================================
 install(TARGETS NanoAI_RKNN
     EXPORT NanoAI_RKNNTargets
@@ -198,8 +221,18 @@ install(FILES
     DESTINATION ${NANOAI_RKNN_INSTALL_CMAKEDIR}
 )
 
+if(NANOAI_RKNN_ENABLE_CPACK)
+    # 仅在显式开启时引入 CPack，避免常规开发配置阶段生成多余打包目标。
+    set(CPACK_PACKAGE_NAME "NanoAI_RKNN")
+    set(CPACK_PACKAGE_VENDOR "NanoAI")
+    set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+    set(CPACK_GENERATOR "TGZ;ZIP")
+    include(CPack)
+endif()
+
 # ======================================================
 # 示例构建（可选）
+# 示例依赖完整交叉编译运行时环境，默认关闭以减少首次接入门槛。
 # ======================================================
 if(NANOAI_RKNN_BUILD_EXAMPLES)
     add_subdirectory(examples)

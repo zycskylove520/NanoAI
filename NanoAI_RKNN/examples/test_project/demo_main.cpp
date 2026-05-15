@@ -3,7 +3,11 @@
 // Copyright (c) NanoAI
 //
 // File: demo_main.cpp
-// Brief: TODO - add file summary.
+// Brief: 展示 RKNN 人脸特征模型从加载、预处理到推理输出的最小完整 pipeline 用法。
+//
+// Design notes:
+// - 示例优先演示 API 串联方式，不追求覆盖所有配置分支。
+// - 使用 host 内存模式以降低示例环境准备门槛，便于快速验证基本链路。
 //
 
 #include <iostream>
@@ -12,6 +16,9 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
 #include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -20,7 +27,6 @@
 
 #include "nanoai_flow/core/pipeline.hpp"
 #include "nanoai_rknn/core/rknn_runtime.hpp"
-#include "nanoai_rknn/core/rknn_types.hpp"
 #include "nanoai_rknn/cv/rknn_cv_preprocess_pipe.hpp"
 #include "nanoai_rknn/cv/rknn_cv_types.hpp"
 #include "nanoai_rknn/cv/rknn_cv_infer_pipe.hpp"
@@ -51,13 +57,13 @@ int main(int argc, char **argv)
             throw std::runtime_error("Failed to load image: " + image_path);
         }
 
-        // 1) 直接构造四个 pipe
+        // 1) 直接构造四个 pipe。load pipe 负责惰性加载，其余 stage 只关注各自数据变换职责。
         auto ai_ctx = std::make_shared<NanoAI_RKNN::Helper::RKNNAIContext>();
-        NanoAI_RKNN::CV::RknnHostLoadPipe<> load_pipe(model_path, ai_ctx);
-        NanoAI_RKNN::CV::RknnHostRgbToFp16Pipe<> preprocess_pipe;
+        NanoAI_RKNN::CV::RknnLoadPipe<NanoAI_RKNN::RknnMemoryMode::host> load_pipe(model_path, ai_ctx);
+        NanoAI_RKNN::CV::RknnCvPreprocessPipe_RgbNormalize<> preprocess_pipe(true);
         NanoAI_RKNN::CV::RknnHostInferPipe<> infer_pipe;
         NanoAI_RKNN::CV::RknnHostPostprocessPipe<std::vector<float>> post_pipe(
-            [](const NanoAI_RKNN::RknnInferResult &result) -> std::vector<float> {
+            [](const NanoAI_RKNN::CV::RknnCvInferResult &result) -> std::vector<float> {
                 if (result.outputs.empty())
                 {
                     return std::vector<float>{};
@@ -65,19 +71,17 @@ int main(int argc, char **argv)
                 return result.outputs.front().data;
             });
 
-        // 2) add_pipe 串起来（add_pipe 返回新管线对象）
-        auto face_recognition_pipeline = NanoAI_FLOW::NanoPipeLine(8, 64)
-                            .add_pipe(load_pipe)
-                            .add_pipe(preprocess_pipe)
-                            .add_pipe(infer_pipe)
-                            .add_pipe(post_pipe);
+        // 2) 使用 builder API 固化执行顺序。ordered 模式适合需要稳定输入输出配对的推理任务。
+        auto face_recognition_pipeline = NanoAI_FLOW::make_pipeline_builder<NanoAI_FLOW::PipeForwardOrder::ordered>(8, 64)
+                    .add_pipe(load_pipe)
+                    .add_pipe(preprocess_pipe)
+                    .add_pipe(infer_pipe)
+                    .add_pipe(post_pipe)
+                    .build();
 
-        // 3) run(input_data)
+        // 3) 运行一次完整推理。示例仅打印向量维度和前几个值，方便快速确认模型确实产出结果。
         NanoAI_RKNN::CV::RknnPipelineInput input_data;
-        input_data.data = img.data;
-        input_data.width = img.cols;
-        input_data.height = img.rows;
-        input_data.channels = 3;
+        input_data.image = img;
 
         std::vector<float> feature = face_recognition_pipeline.run(input_data);
 
@@ -92,6 +96,7 @@ int main(int argc, char **argv)
                       << std::endl;
         }
 
+        // 示例中手动释放 RKNN 资源，避免读者误以为 shared_ptr 会自动处理底层 C API 句柄。
         if (ai_ctx)
         {
             NanoAI_RKNN::Helper::ReleaseAIContext(*ai_ctx);

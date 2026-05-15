@@ -5,3 +5,17 @@ find_dependency(Threads)
 find_dependency(NanoAIFlow CONFIG)
 
 include("${CMAKE_CURRENT_LIST_DIR}/NanoAI_RKNNTargets.cmake")
+
+# Compatibility variables for consumers that still use *_INCLUDE_DIRS / *_LIBRARIES.
+set_and_check(NanoAI_RKNN_INCLUDE_DIR "${PACKAGE_PREFIX_DIR}/include")
+set(NanoAI_RKNN_INCLUDE_DIRS "${NanoAI_RKNN_INCLUDE_DIR}")
+set(NanoAI_RKNN_LIBRARY NanoAI_RKNN::NanoAI_RKNN)
+set(NanoAI_RKNN_LIBRARIES NanoAI_RKNN::NanoAI_RKNN)
+
+# Compatibility alias for historical namespace style.
+if(TARGET NanoAI_RKNN::NanoAI_RKNN AND NOT TARGET NanoAI::NanoAI_RKNN)
+	add_library(NanoAI::NanoAI_RKNN INTERFACE IMPORTED)
+	set_target_properties(NanoAI::NanoAI_RKNN PROPERTIES
+		INTERFACE_LINK_LIBRARIES NanoAI_RKNN::NanoAI_RKNN
+	)
+endif()
