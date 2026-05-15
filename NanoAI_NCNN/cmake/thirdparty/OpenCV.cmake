@@ -3,11 +3,11 @@
 # Copyright (c) NanoAI
 #
 # File: OpenCV.cmake
-# Brief: CMake script for NanoAI module build, dependency wiring, and install behavior.
+# Brief: 查找 OpenCV 并把头文件与链接信息追加到 NanoAI_NCNN 的公共接口列表中。
 #
 # Notes:
-# - Keep platform/toolchain assumptions explicit in comments when modifying this file.
-# - Keep third-party dependency comments aligned with version/source changes.
+# - OpenCV 组件集合通过缓存变量公开，便于不同部署场景裁剪到最小依赖面。
+# - Android 或交叉编译场景通常需要显式指定 `OPENCV_CMAKE_DIR`，避免误命中主机版本。
 
 include_guard(GLOBAL)
 
@@ -23,6 +23,7 @@ if(NANOAI_NCNN_WITH_OPENCV)
     if(OPENCV_CMAKE_DIR STREQUAL "")
         find_package(OpenCV ${_NANOAI_NCNN_OPENCV_FIND_ARGS})
     else()
+        # 通过显式覆盖 OpenCV_DIR，确保 find_package 不会优先拾取系统默认安装。
         set(OpenCV_DIR ${OPENCV_CMAKE_DIR})
         find_package(OpenCV ${_NANOAI_NCNN_OPENCV_FIND_ARGS})
     endif()
@@ -31,6 +32,7 @@ if(NANOAI_NCNN_WITH_OPENCV)
         list(APPEND NANOAI_NCNN_INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
     endif()
 
+    # 优先使用 OpenCV 导出的 target，只有旧式变量包时才退回原始库名列表。
     set(_NANOAI_NCNN_OPENCV_TARGET_LIBS)
     if(OpenCV_LIBS)
         foreach(_ncnn_opencv_lib IN LISTS OpenCV_LIBS)

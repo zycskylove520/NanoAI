@@ -3,7 +3,11 @@
 // Copyright (c) NanoAI
 //
 // File: ncnn_cv_infer_pipe.hpp
-// Brief: TODO - add file summary.
+// Brief: 封装 NCNN 视觉推理阶段，负责创建 extractor、送入输入张量并提取指定输出节点。
+//
+// Design notes:
+// - 每次 on_run 创建新的 extractor，以复用共享 `ncnn::Net` 同时隔离单次推理状态。
+// - 输入输出节点名可配置，方便对接不同导出模型的张量命名差异。
 //
 
 #pragma once
@@ -53,6 +57,7 @@ namespace NanoAI_NCNN::CV
                 throw std::invalid_argument("NcnnCvInferPipe::on_run: runtime is null or not loaded");
             }
 
+            // extractor 是单次推理会话对象；按次创建可避免并发场景下共享中间状态。
             ncnn::Extractor extractor = runtime->net->create_extractor();
             const int input_ret = extractor.input(input_name_.c_str(), input.image);
             if (input_ret != 0)
@@ -73,6 +78,7 @@ namespace NanoAI_NCNN::CV
             return std::make_tuple(runtime, std::move(result));
         }
 
+        // input_name_ / output_name_ 保存模型图中的张量名，通常在模型导出后保持稳定。
         std::string input_name_;
         std::string output_name_;
     };

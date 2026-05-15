@@ -3,7 +3,11 @@
 // Copyright (c) NanoAI
 //
 // File: main.cpp
-// Brief: TODO - add file summary.
+// Brief: 演示基于 NanoAI_NCNN 的车辆检测 pipeline 的最小命令行使用方式。
+//
+// Design notes:
+// - 示例重点展示模型路径、节点名和输入图像如何接入完整 pipeline。
+// - 输出仅做简单绘框与保存，便于快速验证推理链路是否工作正常。
 //
 
 #include <iostream>
@@ -36,6 +40,7 @@ namespace
 
     bool parse_args(int argc, char **argv, CliArgs &args)
     {
+        // 采用顺序扫描的轻量解析方式，避免为了示例程序引入额外命令行库依赖。
         for (int i = 1; i < argc; ++i)
         {
             const std::string key = argv[i];
@@ -96,6 +101,7 @@ int main(int argc, char **argv)
 
     try
     {
+        // 这里显式传入输入/输出节点名，方便对接不同导出模型时快速替换图节点。
         auto pipeline = NanoAI_NCNN::Projects::CarDetectionExample::make_car_pipeline(
             args.param_path,
             args.bin_path,
@@ -106,6 +112,7 @@ int main(int argc, char **argv)
 
         auto detections = pipeline.run(NanoAI_NCNN::CV::NcnnCvPipelineInput{input_image});
 
+        // 示例只做基础可视化，重点是验证检测结果已经成功回到原图坐标系。
         for (const auto &bbox : detections)
         {
             std::cout << "Detected: " << bbox.class_name

@@ -4,16 +4,18 @@
 
 
 
-NanoAI_NCNN 是一个高性能的 NCNN 端侧推理 C++ 框架。现仅本地 INTERFACE 构建，不再支持 install/package/export，用户可选构建 examples 进行学习和测试。所有依赖均通过 INTERFACE 链接，适合稳定高吞吐的部署链路，支持 Linux aarch64、Android 等多平台。
+NanoAI_NCNN 是一个高性能的 NCNN 端侧推理 C++ 框架。现仅本地 INTERFACE 构建，用户可选构建 examples 进行学习和测试。所有依赖均通过 INTERFACE 链接，适合稳定高吞吐的部署链路，支持 Linux x86_64、Android 等多平台。
+
+该模块刻意保持“薄库”形态：核心价值主要体现在公开头文件、基于 NanoAIFlow 的 pipeline 组织方式，以及端侧部署所需的显式依赖/工具链配置，而不是额外生成一层厚重的本地二进制库。
 
 
 ## 核心特性
 
-1. **仅 INTERFACE 构建**：NanoAI_NCNN 现仅本地 INTERFACE 构建，不再支持 install/package/export。依赖请用 `find_package(NanoAIFlow CONFIG REQUIRED)`。
+1. **仅 INTERFACE 构建**：NanoAI_NCNN 以 INTERFACE 目标形式对外暴露，目的是让下游复用统一依赖面，而不是重复封装一份内部二进制库。
 2. **示例可选构建**：仅在设置 `-DNANOAI_NCNN_BUILD_EXAMPLES=ON` 时构建 examples。
 3. **INTERFACE 链接**：所有依赖（NanoAIFlow、OpenCV、NCNN 等）均 INTERFACE 链接，集成健壮、模块化。
 4. **高吞吐推理流水线**：基于 NanoAIFlow，支持并发、有序、强类型推理链路。
-5. **多平台端侧部署**：支持 Linux aarch64、Android，分别有 toolchain 与依赖配置。
+5. **多平台端侧部署**：支持 Linux x86_64、Android，分别有 toolchain 与依赖配置。
 6. **依赖与交叉编译流程清晰**：NCNN、OpenCV、NDK 等依赖配置明确，交叉编译预设清晰。
 
 
@@ -24,6 +26,8 @@ NanoAI_NCNN 是一个高性能的 NCNN 端侧推理 C++ 框架。现仅本地 IN
 - `examples`：可选示例程序（通过 `-DNANOAI_NCNN_BUILD_EXAMPLES=ON` 构建）
 - `3rdparty`：第三方依赖目录
 - `docs`：构建与打包文档
+
+`examples` 与主目标导出逻辑刻意分离，这样即使示例增加了 demo 专用源码或额外可视化逻辑，也不会影响下游集成 `NanoAI_NCNN` 的稳定接口面。
 
 
 
@@ -43,12 +47,12 @@ cmake -S . -B build_example \
 cmake --build build_example -j
 ```
 
-### 3. 交叉编译预设
+### 2. 交叉编译预设
 
-- `NANOAI_NCNN_LINUX_AARCH64_PRESET`：启用 Linux aarch64 交叉编译
-- `NANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE`：自定义 Linux aarch64 toolchain 文件
+- `NANOAI_NCNN_LINUX_x86_64_PRESET`：启用 Linux x86_64 预设
 - `NANOAI_NCNN_ANDROID_PRESET`：启用 Android 交叉编译
-- `NANOAI_NCNN_ANDROID_NDK_PATH`：Android NDK 根目录
+
+启用预设后，顶层 CMake 会显式暴露目标平台假设，而不是静默猜测主机侧 SDK 路径。对 Android/OpenCV/NCNN 这类容易误命中主机库的组合来说，这一点尤其重要。
 
 
 常见第三方依赖配置：

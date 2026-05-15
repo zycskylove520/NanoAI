@@ -3,7 +3,11 @@
 // Copyright (c) NanoAI
 //
 // File: ncnn_cv_postprocess_pipe.hpp
-// Brief: TODO - add file summary.
+// Brief: 提供 NCNN 视觉结果的通用后处理 pipe 与 YOLO11 检测解码实现。
+//
+// Design notes:
+// - 通用后处理 pipe 允许外部注入任意转换逻辑，默认只在输出类型相同时做透传。
+// - YOLO11 后处理默认假设输出为二维特征图 `[4 + num_classes, num_boxes]`。
 //
 
 #pragma once
@@ -29,6 +33,7 @@ using NanoAI_FLOW::PipeExecutionPolicy;
 
 namespace NanoAI_NCNN::CV
 {
+    // 单个检测框使用左上/右下角表示，方便直接做 NMS 与可视化绘制。
     struct NcnnCvYolo11Detection
     {
         float x1{0.0F};
@@ -42,6 +47,7 @@ namespace NanoAI_NCNN::CV
 
     using NcnnCvYolo11Detections = std::vector<NcnnCvYolo11Detection>;
 
+    // YOLO11 后处理参数集中管理阈值、NMS 策略与类别名表，便于示例与业务代码共享。
     struct NcnnCvYolo11PostprocessOptions
     {
         float conf_threshold{0.25F};
@@ -74,6 +80,7 @@ namespace NanoAI_NCNN::CV
                 return callback_(result);
             }
 
+            // 未提供回调时只允许透传原始推理结果，避免对自定义输出类型产生隐式转换。
             if constexpr (std::is_same_v<Out, NcnnCvInferResult>)
             {
                 return result;
@@ -140,6 +147,7 @@ namespace NanoAI_NCNN::CV
             return 1.0F / (1.0F + std::exp(-x));
         }
 
+        // IoU 仅用于 NMS 抑制阶段，按轴对齐矩形计算即可满足常见检测模型需求。
         static float iou(const NcnnCvYolo11Detection &lhs, const NcnnCvYolo11Detection &rhs)
         {
             const float inter_left = std::max(lhs.x1, rhs.x1);
@@ -175,6 +183,7 @@ namespace NanoAI_NCNN::CV
 
         static int infer_class_count(const ncnn::Mat &output, const std::vector<std::string> &class_names)
         {
+            // 优先使用显式类别名个数，避免因不同模型导出布局差异导致推断错误。
             if (!class_names.empty())
             {
                 return static_cast<int>(class_names.size());
@@ -233,6 +242,7 @@ namespace NanoAI_NCNN::CV
             return true;
         }
 
+        // 将 letterbox 坐标系下的检测框恢复到原图坐标，并在已知原图尺寸时做边界裁剪。
         static NcnnCvYolo11Detection de_letterbox_detection(const NcnnCvYolo11Detection &in_box, const NcnnCvPadRatio &pr)
         {
             NcnnCvYolo11Detection out_box = in_box;
@@ -260,6 +270,7 @@ namespace NanoAI_NCNN::CV
             return out_box;
         }
 
+        // NMS 先按分数降序保留最佳框，再移除与其重叠过高的候选框。
         static void apply_single_class_nms(const NcnnCvYolo11Detections &input_boxes,
                                            NcnnCvYolo11Detections &output_boxes,
                                            float nms_threshold)
@@ -305,11 +316,12 @@ namespace NanoAI_NCNN::CV
             int num_candidates = 0;
             std::vector<float> yolo_features;
 
-            // Merge decoding + confidence filtering in one pass to reduce temporary buffers.
+            // 解码与阈值过滤合并到一次遍历中，减少大型输出张量场景下的临时内存占用。
             if (extract_yolo_features(result.output, feature_dim, num_candidates, yolo_features))
             {
                 detections.reserve(static_cast<std::size_t>(num_candidates));
 
+                // 部分导出结果的类别分数仍是 logits，这里按需检测后统一套 sigmoid。
                 bool class_need_sigmoid = false;
                 if (options_.apply_sigmoid_if_needed && num_candidates > 0)
                 {
@@ -400,6 +412,7 @@ namespace NanoAI_NCNN::CV
                 return nms_output;
             }
 
+            // 某些展示场景只关心每个类别一个最佳框，因此在 NMS 后进一步做按类收敛。
             std::unordered_map<int, NcnnCvYolo11Detection> best_box_by_class;
             best_box_by_class.reserve(16);
             for (const auto &box : nms_output)

@@ -1,13 +1,15 @@
 
-NanoAI_NCNN is a high-performance C++ inference framework for NCNN-based edge deployment. It is now only built as a local INTERFACE target, and users can optionally build examples for learning and testing. All dependencies are linked via INTERFACE, and the framework is designed for stable, high-throughput deployment chains on platforms such as Linux aarch64 and Android.
+NanoAI_NCNN is a high-performance C++ inference framework for NCNN-based edge deployment. It is now only built as a local INTERFACE target, and users can optionally build examples for learning and testing. All dependencies are linked via INTERFACE, and the framework is designed for stable, high-throughput deployment chains on platforms such as Linux x86_64 and Android.
+
+This module keeps the library target intentionally thin: most engineering value comes from the public headers, the NanoAIFlow-based pipeline composition model, and the explicit dependency/toolchain wiring required for edge deployment.
 
 ## Core Features
 
-1. **INTERFACE only**: NanoAI_NCNN is now only built as a local INTERFACE target, not installable as a CMake package. Use `find_package(NanoAIFlow CONFIG REQUIRED)` for dependency.
+1. **INTERFACE only**: NanoAI_NCNN is built as an INTERFACE target so downstream projects reuse one consistent dependency surface instead of rebuilding an internal binary library.
 2. **Examples are optional**: Example programs are built only if `-DNANOAI_NCNN_BUILD_EXAMPLES=ON` is set.
 3. **INTERFACE linkage**: All dependencies (NanoAIFlow, OpenCV, NCNN, etc.) are linked via INTERFACE, making integration robust and modular.
 4. **High-throughput inference pipelines**: Built on NanoAIFlow, supports concurrent, ordered, and strongly typed inference chains.
-5. **Multi-platform edge deployment**: Supports Linux aarch64 and Android, with toolchain and dependency configuration for each platform.
+5. **Multi-platform edge deployment**: Supports Linux x86_64 and Android, with toolchain and dependency configuration for each platform.
 6. **Explicit dependency and cross-compilation workflow**: Clear configuration for NCNN, OpenCV, Android NDK, etc.; presets for cross-compilation.
 ## Repository Layout
 
@@ -16,6 +18,8 @@ NanoAI_NCNN is a high-performance C++ inference framework for NCNN-based edge de
 - `examples`: optional example programs (build with `-DNANOAI_NCNN_BUILD_EXAMPLES=ON`)
 - `3rdparty`: third-party dependency directory
 - `docs`: build and packaging documentation
+
+The examples directory is intentionally separated from the exported target logic. This keeps consumer-facing integration stable even when examples add extra demo-only source files.
 
 
 ## Build
@@ -29,12 +33,12 @@ cmake -S . -B build_example \
 cmake --build build_example -j
 ```
 
-### 3. Cross-compilation presets
+### 2. Cross-compilation presets
 
-- `NANOAI_NCNN_LINUX_AARCH64_PRESET`: Enable Linux aarch64 cross-compilation
-- `NANOAI_NCNN_LINUX_AARCH64_TOOLCHAIN_FILE`: Custom toolchain file for Linux aarch64
+- `NANOAI_NCNN_LINUX_x86_64_PRESET`: Enable Linux x86_64 preset
 - `NANOAI_NCNN_ANDROID_PRESET`: Enable Android cross-compilation
-- `NANOAI_NCNN_ANDROID_NDK_PATH`: Android NDK root directory
+
+When a preset is enabled, the top-level CMake script keeps platform assumptions explicit instead of silently guessing host-side SDK paths. This is especially important for Android/OpenCV/NCNN combinations where host libraries are often discoverable but unusable for the target.
 ## Documentation
 
 - [Chinese README](README_zh.md)
