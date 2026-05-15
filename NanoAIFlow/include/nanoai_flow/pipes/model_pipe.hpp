@@ -3,7 +3,11 @@
 // Copyright (c) NanoAI
 //
 // File: model_pipe.hpp
-// Brief: 模型生命周期与推理阶段适配器。
+// Brief: 提供模型加载与推理阶段的通用适配器，封装“首次加载后复用”的典型推理链路语义。
+//
+// Design notes:
+// - LoadModelPipe 把一次性加载控制下沉到公共基类，避免各模型 stage 重复书写并发保护逻辑。
+// - InferModelPipe 只做语义转发，不试图约束具体推理后端的线程安全策略。
 
 #pragma once
 
@@ -53,6 +57,7 @@ public:
     void reset_model_loaded() noexcept
     {
         std::lock_guard lock(load_state_mtx_);
+        // 这里只重置标志位；底层模型资源的真正释放/重建策略由派生类自行决定。
         loaded_ = false;
     }
 
@@ -85,6 +90,7 @@ private:
             return;
         }
 
+        // 把一次性加载放在锁内执行，优先保证“绝不重复加载”，即便代价是首次并发请求需要串行等待。
         const int ret = static_cast<const Derived *>(this)->load_model(input);
         if (ret != 0)
         {

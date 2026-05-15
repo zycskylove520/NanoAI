@@ -149,32 +149,41 @@ public:
     }
 
     /**
-         * @brief 支持协作式取消的 run 调度入口。
-         *
-         * 若 on_run 支持 NanoCancelToken 参数，则自动传递；否则保持兼容。
-         * @tparam Args 用户输入参数。
-         * @param cancel_token 协作式取消信号。
-         * @param args 其余参数。
-         */
-        template <typename... Args>
-        decltype(auto) run_with_cancel(const NanoCancelToken& cancel_token, Args&&... args)
+     * @brief 支持协作式取消的 run 调度入口。
+     *
+     * 行为：
+     * - 若派生类 `on_run(...)` 显式接受 `NanoCancelToken`，则把 token 追加传入；
+     * - 否则自动回退到旧签名，保证老 stage 不因引入取消机制而被迫修改。
+     *
+     * 设计意图：把“是否感知取消”交给具体 stage 决定，而不是强制所有 stage
+     * 都接受 token 参数，这样可以平滑兼容纯计算型或无阻塞阶段。
+     */
+    template <typename... Args>
+    decltype(auto) run_with_cancel(const NanoCancelToken &cancel_token, Args &&...args)
+    {
+        if constexpr (requires(Derived &d, Args &&...a, const NanoCancelToken &t) { d.on_run(std::forward<Args>(a)..., t); })
         {
-            if constexpr (requires(Derived& d, Args&&... a, const NanoCancelToken& t) { d.on_run(std::forward<Args>(a)..., t); }) {
-                return static_cast<Derived*>(this)->on_run(std::forward<Args>(args)..., cancel_token);
-            } else {
-                return static_cast<Derived*>(this)->on_run(std::forward<Args>(args)...);
-            }
+            return static_cast<Derived *>(this)->on_run(std::forward<Args>(args)..., cancel_token);
         }
+        else
+        {
+            return static_cast<Derived *>(this)->on_run(std::forward<Args>(args)...);
+        }
+    }
 
-        template <typename... Args>
-        decltype(auto) run_with_cancel(const NanoCancelToken& cancel_token, Args&&... args) const
+    /// const 版本行为与非 const 相同，只是转发到 `const Derived::on_run(...)`。
+    template <typename... Args>
+    decltype(auto) run_with_cancel(const NanoCancelToken &cancel_token, Args &&...args) const
+    {
+        if constexpr (requires(const Derived &d, Args &&...a, const NanoCancelToken &t) { d.on_run(std::forward<Args>(a)..., t); })
         {
-            if constexpr (requires(const Derived& d, Args&&... a, const NanoCancelToken& t) { d.on_run(std::forward<Args>(a)..., t); }) {
-                return static_cast<const Derived*>(this)->on_run(std::forward<Args>(args)..., cancel_token);
-            } else {
-                return static_cast<const Derived*>(this)->on_run(std::forward<Args>(args)...);
-            }
+            return static_cast<const Derived *>(this)->on_run(std::forward<Args>(args)..., cancel_token);
         }
+        else
+        {
+            return static_cast<const Derived *>(this)->on_run(std::forward<Args>(args)...);
+        }
+    }
 };
 
 } // namespace NanoAI_FLOW

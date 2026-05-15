@@ -12,6 +12,8 @@ NanoAIFlow 是一个高性能、header-only、强类型并发 C++ 推理与数�
 
 ## 核心特性
 
+说明：以下特性列表既描述“能做什么”，也隐含该框架的工程边界——它更偏向固定拓扑、高吞吐、可观测的生产型流水线，而不是运行时任意拼装节点的 DAG 系统。
+
 1. **每个 Pipe 可独立并发**：每个阶段可声明并发度，多阶段可并行处理不同请求，最大化多核 CPU 吞吐。
 2. **多阶段流水并发推进**：非 barrier 模型，不同请求可在不同阶段并行流动，适合 AI 典型流水线（Load、Preprocess、Infer、Postprocess）。
 3. **高并发下顺序可控**：阶段间始终全局顺序放行，保证输出确定性。
@@ -83,6 +85,8 @@ ctest --test-dir build_test --output-on-failure
 
 ## 性能快照
 
+说明：这些数据主要用于展示版本演进方向与默认配置下的大致性能画像，不应直接替代业务现场 benchmark。实际选型时仍建议结合目标机器、输入分布与线程绑定策略重新测量。
+
 以下数据来自同一台验证主机，对比对象为最初基于 `BS::thread_pool` 的实现与当前最终 C++20 运行时：
 
 - `test_pool_performance/shared_pool_all`：`31746.03 -> 70796.46` QPS
@@ -95,6 +99,8 @@ ctest --test-dir build_test --output-on-failure
 具体数值会随硬件与负载变化，但当前最终版本在验证主机上稳定优于原始第三方线程池实现。
 
 ## 调用方示例
+
+说明：由于 `NanoAIFlow` 是 header-only 的 `INTERFACE` 包，调用方通常只需 `find_package(...)` 并链接 `NanoAI::Flow`，无需关心额外二进制库部署。
 
 ```cmake
 find_package(NanoAIFlow CONFIG REQUIRED)

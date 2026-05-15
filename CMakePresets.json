@@ -30,6 +30,28 @@
         "NANOAI_BUILD_FLOW": "OFF",
         "NANOAI_BUILD_RKNN": "ON",
         "NANOAI_BUILD_NCNN": "OFF",
+        "NANOAI_RKNN_USE_DEFAULT_TOOLCHAIN": "ON",
+        "NANOAIFLOW_ROOT": "$env{NANOAIFLOW_ROOT}",
+        "NANOAI_RKNN_RUNTIME_INCLUDE_DIR": "$env{NANOAI_RKNN_RUNTIME_INCLUDE_DIR}",
+        "NANOAI_RKNN_RUNTIME_LIBRARY_DIR": "$env{NANOAI_RKNN_RUNTIME_LIBRARY_DIR}",
+        "NANOAI_RKNN_RGA_ROOT": "$env{NANOAI_RKNN_RGA_ROOT}",
+        "NANOAI_RKNN_OPENCV_DIR": "$env{NANOAI_RKNN_OPENCV_DIR}",
+        "NANOAI_RKNN_STB_IMAGE_INCLUDE_DIR": "$env{NANOAI_RKNN_STB_IMAGE_INCLUDE_DIR}",
+        "NANOAI_RKNN_JPEG_TURBO_ROOT": "$env{NANOAI_RKNN_JPEG_TURBO_ROOT}",
+        "NANOAI_RKNN_UTILS_ROOT": "$env{NANOAI_RKNN_UTILS_ROOT}",
+        "NANOAI_RKNN_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "rknn-package-explicit-toolchain",
+      "displayName": "NanoAI_RKNN Package (Explicit Toolchain)",
+      "description": "Build NanoAI_RKNN package with explicit RKNN toolchain file",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "NANOAI_BUILD_FLOW": "OFF",
+        "NANOAI_BUILD_RKNN": "ON",
+        "NANOAI_BUILD_NCNN": "OFF",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/NanoAI_RKNN/cmake/toolchains/rknn-aarch64-gcc.cmake",
         "NANOAIFLOW_ROOT": "$env{NANOAIFLOW_ROOT}",
         "NANOAI_RKNN_RUNTIME_INCLUDE_DIR": "$env{NANOAI_RKNN_RUNTIME_INCLUDE_DIR}",
@@ -38,7 +60,8 @@
         "NANOAI_RKNN_OPENCV_DIR": "$env{NANOAI_RKNN_OPENCV_DIR}",
         "NANOAI_RKNN_STB_IMAGE_INCLUDE_DIR": "$env{NANOAI_RKNN_STB_IMAGE_INCLUDE_DIR}",
         "NANOAI_RKNN_JPEG_TURBO_ROOT": "$env{NANOAI_RKNN_JPEG_TURBO_ROOT}",
-        "NANOAI_RKNN_UTILS_ROOT": "$env{NANOAI_RKNN_UTILS_ROOT}"
+        "NANOAI_RKNN_UTILS_ROOT": "$env{NANOAI_RKNN_UTILS_ROOT}",
+        "NANOAI_RKNN_BUILD_EXAMPLES": "OFF"
       }
     },
     {
@@ -52,9 +75,10 @@
         "NANOAI_BUILD_RKNN": "OFF",
         "NANOAI_BUILD_NCNN": "ON",
         "NANOAIFLOW_ROOT": "$env{NANOAIFLOW_ROOT}",
-        "NANOAI_NCNN_NCNN_INCLUDE_DIR": "$env{NANOAI_NCNN_NCNN_INCLUDE_DIR}",
-        "NANOAI_NCNN_NCNN_LIBRARY_DIR": "$env{NANOAI_NCNN_NCNN_LIBRARY_DIR}",
-        "OPENCV_CMAKE_DIR": "$env{OPENCV_CMAKE_DIR}"
+        "ncnn_DIR": "$env{ncnn_DIR}",
+        "NANOAI_NCNN_NCNN_CONFIG_DIR": "$env{NANOAI_NCNN_NCNN_CONFIG_DIR}",
+        "OPENCV_CMAKE_DIR": "$env{OPENCV_CMAKE_DIR}",
+        "NANOAI_NCNN_BUILD_EXAMPLES": "OFF"
       }
     },
     {
@@ -68,13 +92,33 @@
         "NANOAI_BUILD_RKNN": "OFF",
         "NANOAI_BUILD_NCNN": "ON",
         "NANOAI_NCNN_ANDROID_PRESET": "ON",
-        "NANOAI_NCNN_ANDROID_ABI": "arm64-v8a",
-        "NANOAI_NCNN_ANDROID_PLATFORM": "android-26",
-        "NANOAI_NCNN_ANDROID_NDK_PATH": "$env{ANDROID_NDK_HOME}",
+        "CMAKE_TOOLCHAIN_FILE": "$env{ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake",
+        "ANDROID_ABI": "arm64-v8a",
+        "ANDROID_PLATFORM": "android-26",
         "NANOAIFLOW_ROOT": "$env{NANOAIFLOW_ROOT}",
-        "NANOAI_NCNN_NCNN_INCLUDE_DIR": "$env{NANOAI_NCNN_NCNN_INCLUDE_DIR}",
-        "NANOAI_NCNN_NCNN_LIBRARY_DIR": "$env{NANOAI_NCNN_NCNN_LIBRARY_DIR}",
-        "OPENCV_CMAKE_DIR": "$env{OPENCV_CMAKE_DIR}"
+        "ncnn_DIR": "$env{ncnn_DIR}",
+        "NANOAI_NCNN_NCNN_CONFIG_DIR": "$env{NANOAI_NCNN_NCNN_CONFIG_DIR}",
+        "OPENCV_CMAKE_DIR": "$env{OPENCV_CMAKE_DIR}",
+        "NANOAI_NCNN_BUILD_EXAMPLES": "ON",
+        "NANOAI_NCNN_EXAMPLES": "car_detect_example"
+      }
+    },
+    {
+      "name": "ncnn-package-linux-x86_64",
+      "displayName": "NanoAI_NCNN Package (Linux x86_64 Preset)",
+      "description": "Build NanoAI_NCNN package with Linux x86_64 preset enabled",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "NANOAI_BUILD_FLOW": "OFF",
+        "NANOAI_BUILD_RKNN": "OFF",
+        "NANOAI_BUILD_NCNN": "ON",
+        "NANOAI_NCNN_LINUX_x86_64_PRESET": "ON",
+        "NANOAIFLOW_ROOT": "$env{NANOAIFLOW_ROOT}",
+        "ncnn_DIR": "$env{ncnn_DIR}",
+        "NANOAI_NCNN_NCNN_CONFIG_DIR": "$env{NANOAI_NCNN_NCNN_CONFIG_DIR}",
+        "OPENCV_CMAKE_DIR": "$env{OPENCV_CMAKE_DIR}",
+        "NANOAI_NCNN_BUILD_EXAMPLES": "OFF"
       }
     }
   ],
@@ -90,6 +134,11 @@
       "jobs": 8
     },
     {
+      "name": "rknn-package-explicit-toolchain",
+      "configurePreset": "rknn-package-explicit-toolchain",
+      "jobs": 8
+    },
+    {
       "name": "ncnn-package-host",
       "configurePreset": "ncnn-package-host",
       "jobs": 8
@@ -97,6 +146,11 @@
     {
       "name": "ncnn-projects-android",
       "configurePreset": "ncnn-projects-android",
+      "jobs": 8
+    },
+    {
+      "name": "ncnn-package-linux-x86_64",
+      "configurePreset": "ncnn-package-linux-x86_64",
       "jobs": 8
     }
   ]

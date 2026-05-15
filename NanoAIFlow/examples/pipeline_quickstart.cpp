@@ -61,6 +61,7 @@ public:
 int main()
 {
     // 1) 直接构造编译期固定模式管线。
+    // 适合节点集合在编译期已知、且不需要在运行时按条件裁剪阶段的主流程代码。
     AddOnePipe p1;
     ToPairPipe p2;
     JoinPipe p3;
@@ -70,12 +71,14 @@ int main()
     std::cout << "pipeline output: " << out << std::endl;
 
     // 1.1) 流水线支持拷贝/移动构造，可安全按值传递。
+    // 这对“工厂函数返回 pipeline”或“将 pipeline 放入更高层对象”很有帮助。
     auto copied_pipeline = pipeline;
     auto moved_pipeline = std::move(copied_pipeline);
     const std::string out_moved = moved_pipeline.run(10);
     std::cout << "moved_pipeline output: " << out_moved << std::endl;
 
     // 2) 右值链式 builder：仅支持临时对象链式追加，避免左值误用拷贝路径。
+    // 若阶段是条件编译或模板推导产物，builder 写法通常比一次性传参更易读。
     auto pipeline_builder = make_pipeline_builder<PipeForwardOrder::ordered>(8, 64)
                                 .add_pipe(AddOnePipe{})
                                 .add_pipe(ToPairPipe{})
@@ -86,6 +89,7 @@ int main()
     std::cout << "pipeline_builder output: " << out_builder << std::endl;
 
     // 3) 无序模式示例。
+    // 当业务更关心吞吐/尾延时而不要求“按输入顺序放行”时，可考虑 unordered。
     auto pipeline2 = make_pipeline<PipeForwardOrder::unordered>(
         8,
         64,

@@ -192,6 +192,7 @@ void print_bench_result(const BenchResult &result)
               << '\n';
 }
 
+/// 计算相对基线的百分比变化，便于快速观察 profile 调优收益或退化幅度。
 double pct_delta(double baseline, double current)
 {
     if (baseline <= 0.0)
@@ -203,7 +204,11 @@ double pct_delta(double baseline, double current)
 
 int main()
 {
-    // 基准测试分为两段：高压吞吐阶段 + 严格顺序对照阶段。
+    // 基准测试分为三段：
+    // 1. shared/dedicated/mixed 的高压吞吐比较；
+    // 2. ordered/unordered 固定模式比较；
+    // 3. ordered 模式下不同 drain profile 的调优对比。
+    // 这样可以把“执行策略差异”和“同一策略下的运行时参数差异”拆开观察。
     const int jobs = 20000;
     const int submit_threads = static_cast<int>(std::max(4u, std::thread::hardware_concurrency()));
     const int strict_order_jobs = 8000;
@@ -211,6 +216,7 @@ int main()
     std::cout << "========== High Concurrency Perf: shared / dedicated / mixed ==========" << '\n';
     std::cout << "[CONFIG] jobs=" << jobs << ", submit_threads=" << submit_threads << '\n';
 
+    // shared_pool_all：观察所有阶段竞争同一共享池时的吞吐与排序行为。
     const auto shared_result = run_high_concurrency_benchmark(
         "shared_pool_all",
         jobs,
@@ -222,6 +228,7 @@ int main()
             return make_pipeline<PipeForwardOrder::ordered>(16, 64, pipe1, pipe2, pipe3);
         });
 
+    // dedicated_pool_all：观察完全资源隔离时的吞吐上限与线程成本。
     const auto dedicated_result = run_high_concurrency_benchmark(
         "dedicated_pool_all",
         jobs,
@@ -233,6 +240,7 @@ int main()
             return make_pipeline<PipeForwardOrder::ordered>(16, 64, pipe1, pipe2, pipe3);
         });
 
+    // mixed_pool_shared_dedicated_shared：模拟真实业务里“重阶段单独隔离，其余阶段共享”的折中方案。
     const auto mixed_result = run_high_concurrency_benchmark(
         "mixed_pool_shared_dedicated_shared",
         jobs,
@@ -252,6 +260,7 @@ int main()
 
     const NanoPipeLineOptions mode_profile{16, 64};
 
+    // ordered 与 unordered 对比主要回答：顺序确定性要付出多少吞吐代价。
     const auto mode_ordered = run_high_concurrency_benchmark(
         "mode_ordered",
         jobs,
@@ -281,6 +290,7 @@ int main()
 
     const NanoPipeLineOptions profile_default{16, 64};
 
+    // throughput profile 倾向减少调度切换频率，以更大的批量换取吞吐。
     auto profile_throughput = profile_default;
     profile_throughput.drain_batch_min = 64;
     profile_throughput.drain_batch_max = 1024;
@@ -289,6 +299,7 @@ int main()
     profile_throughput.yield_on_full_batch = false;
     profile_throughput.yield_on_slow_batch = true;
 
+    // latency profile 倾向更快让出执行权，以降低单次 drain 过长导致的尾延时风险。
     auto profile_latency = profile_default;
     profile_latency.drain_batch_min = 4;
     profile_latency.drain_batch_max = 128;
@@ -343,6 +354,7 @@ int main()
               << '\n';
 
     std::cout << "\n========== Strict Order Control (single submit thread) ==========" << '\n';
+    // 最后一段使用单提交线程做对照，尽量减少 submit 侧竞争对“完成顺序”观测的污染。
     std::cout << "[CONFIG] jobs=" << strict_order_jobs << ", submit_threads=1" << '\n';
 
     const auto shared_strict = run_high_concurrency_benchmark(

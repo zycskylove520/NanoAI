@@ -3,7 +3,11 @@
 // Copyright (c) NanoAI
 //
 // File: process_pipe.hpp
-// Brief: 预处理与后处理阶段通用适配器。
+// Brief: 提供预处理/后处理 stage 的轻量适配器，统一把业务语义映射到 `on_run(...)` 契约。
+//
+// Design notes:
+// - 该文件只做接口适配，不持有共享状态，也不绑定具体数据类型。
+// - 通过 `preprocess/postprocess -> on_run` 的固定映射，减少业务 stage 的样板代码。
 
 #pragma once
 
@@ -33,6 +37,7 @@ class PreprocessPipe : public NanoPipe<Derived, NumThreads, Policy, DedicatedPoo
 public:
     /// 转发到 Derived::preprocess。
     /// 异常语义：透传派生类异常，不在此层吞掉错误。
+    /// 设计意图：让预处理阶段代码使用更贴近业务语义的 `preprocess(...)` 命名。
     template <typename T>
     decltype(auto) on_run(T &&input)
     {
@@ -67,6 +72,7 @@ class PostProcessPipe : public NanoPipe<Derived, NumThreads, Policy, DedicatedPo
 public:
     /// 转发到 Derived::postprocess。
     /// 异常语义：透传派生类异常，交由 pipeline 上层统一处理。
+    /// 设计意图：把“后处理”语义从通用 `on_run(...)` 中显式分离出来，提升可读性。
     template <typename T>
     decltype(auto) on_run(T &&input)
     {

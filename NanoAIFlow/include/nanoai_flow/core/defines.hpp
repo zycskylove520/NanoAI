@@ -49,6 +49,8 @@ struct check_element_type
     template <typename T, int Index, typename... Args>
     static void check(Args &&...)
     {
+        // 这里用 remove_reference_t 保持“按实参槽位检查”的语义，
+        // 关注的是参数包位置上的基础类型，而不是调用点的左值/右值值类别。
         using ElementType = std::tuple_element_t<Index, std::tuple<std::remove_reference_t<Args>...>>;
         static_assert(std::is_same_v<T, ElementType>, "get_args_element type mismatch at index");
     }

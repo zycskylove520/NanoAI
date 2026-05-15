@@ -13,6 +13,7 @@
 #pragma once
 
 // Core runtime utilities.
+// 统一入口适合示例和小型项目；大型工程若关心编译时间，可改为按需包含子头。
 #include "core/copy.hpp"
 #include "core/defines.hpp"
 #include "core/pipe.hpp"

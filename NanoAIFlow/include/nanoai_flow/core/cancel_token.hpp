@@ -15,7 +15,8 @@
 #include <atomic>
 #include <memory>
 
-namespace NanoAI_FLOW {
+namespace NanoAI_FLOW
+{
 
 /**
  * @brief 协作式取消信号。
@@ -25,7 +26,9 @@ namespace NanoAI_FLOW {
  * 生命周期：
  * - 通过 shared_ptr 共享状态，拷贝 token 后仍指向同一取消源。
  */
-struct NanoCancelToken {
+struct NanoCancelToken
+{
+    // 共享取消状态；多个 token 副本指向同一原子位，便于跨 stage/跨线程传播取消信号。
     std::shared_ptr<std::atomic<bool>> cancelled;
 
     // 创建一个“未取消”状态的 token。
@@ -33,11 +36,20 @@ struct NanoCancelToken {
 
     // 发出取消请求。
     // 行为：仅置位，不阻塞等待执行线程退出（协作式语义）。
-    void request_cancel() const { if (cancelled) cancelled->store(true, std::memory_order_relaxed); }
+    void request_cancel() const
+    {
+        if (cancelled)
+        {
+            cancelled->store(true, std::memory_order_relaxed);
+        }
+    }
 
     // 查询当前是否已请求取消。
     // 返回：true 表示调用方应尽快走收敛/退出路径。
-    bool is_cancelled() const { return cancelled && cancelled->load(std::memory_order_relaxed); }
+    bool is_cancelled() const
+    {
+        return cancelled && cancelled->load(std::memory_order_relaxed);
+    }
 };
 
 /**
@@ -46,7 +58,9 @@ struct NanoCancelToken {
  * 用途：后续可在不破坏 NanoCancelToken 用法的前提下扩展取消原因、
  * 截止时间等上下文字段。
  */
-struct NanoCancelContext {
+struct NanoCancelContext
+{
+    // 当前上下文默认仅携带 token，保留结构体是为了将来扩展原因、deadline 等字段时不破坏 API 形状。
     NanoCancelToken token;
     // 可扩展更多上下文信息
 };
